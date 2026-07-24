@@ -1,0 +1,26 @@
+# Dependências e artefatos Node.js
+node_modules/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Segredos e configurações locais
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Logs e dados locais
+*.log
+logs/
+.n8n/
+data/
+tmp/
+
+# Editores e sistema operacional
+.DS_Store
+.idea/
+.vscode/
+
