@@ -1,4 +1,9 @@
 import type { Actor } from "../../shared/src/index.ts";
+import {
+  OFFICIAL_HIGHLY_RELEVANT_FIXTURE,
+  OUT_OF_POSITIONING_FIXTURE,
+  calculateFixtureRelevance,
+} from "./relevance/index.ts";
 import { createReceivedNews } from "./state-machine.ts";
 import type {
   EditorialCommand,
@@ -42,19 +47,13 @@ export const CORROBORATING_SOURCE = {
   isOfficial: true,
 } as const;
 
-export const HIGH_RELEVANCE = {
-  value: 82,
-  threshold: 60,
-  reason: "Tema fictício compatível com a política editorial de teste.",
-  policyVersion: "relevance-fixture-v1",
-} as const;
+export const HIGH_RELEVANCE = calculateFixtureRelevance(
+  OFFICIAL_HIGHLY_RELEVANT_FIXTURE,
+);
 
-export const LOW_RELEVANCE = {
-  value: 24,
-  threshold: 60,
-  reason: "Tema fictício fora do recorte editorial de teste.",
-  policyVersion: "relevance-fixture-v1",
-} as const;
+export const LOW_RELEVANCE = calculateFixtureRelevance(
+  OUT_OF_POSITIONING_FIXTURE,
+);
 
 export const VERIFIED_RESULT: VerificationResult = {
   outcome: "VERIFIED",

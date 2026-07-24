@@ -49,6 +49,7 @@ beforeEach(async () => {
       approval_actions,
       processed_commands,
       audit_events,
+      editorial_relevance_results,
       approval_requests,
       draft_versions,
       editorial_news

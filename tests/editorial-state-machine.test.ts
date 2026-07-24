@@ -17,12 +17,14 @@ import {
   EDITORIAL_STATES,
   EntityNotFoundError,
   IDEMPOTENCY_SCENARIO,
+  HIGH_RELEVANCE,
   INVALID_TRANSITION_SCENARIO,
   InMemoryEditorialNewsRepository,
   InvalidRelevanceScoreError,
   InvalidActorError,
   InvalidTransitionError,
   LOW_RELEVANCE_SCENARIO,
+  LOW_RELEVANCE,
   LowRelevanceError,
   RequiredFieldMissingError,
   StaleApprovalVersionError,
@@ -153,7 +155,7 @@ describe("editorial state machine", () => {
   test("discards low-relevance news in a terminal state", () => {
     const { entity } = runScenario(LOW_RELEVANCE_SCENARIO);
     assert.equal(entity.state, "DISCARDED_LOW_RELEVANCE");
-    assert.equal(entity.relevance?.value, 24);
+    assert.equal(entity.relevance?.value, LOW_RELEVANCE.value);
   });
 
   test("prevents low-relevance news from requesting verification", () => {
@@ -530,10 +532,8 @@ describe("editorial state machine", () => {
           {
             type: "ScoreNews",
             relevance: {
+              ...HIGH_RELEVANCE,
               value: 101,
-              threshold: 60,
-              reason: "Valor inválido fictício.",
-              policyVersion: "fixture-v1",
             },
           },
           {
@@ -649,6 +649,11 @@ describe("editorial state machine", () => {
       "LOW_RELEVANCE",
       "INVALID_ACTOR",
       "CONCURRENT_UPDATE",
+      "INVALID_RELEVANCE_INPUT",
+      "INVALID_RELEVANCE_POLICY",
+      "INVALID_DATE_RANGE",
+      "UNSUPPORTED_SOURCE_TYPE",
+      "UNSUPPORTED_NOVELTY_TYPE",
     ]);
   });
 });

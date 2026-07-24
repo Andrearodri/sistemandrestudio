@@ -10,6 +10,7 @@ import {
   RequiredFieldMissingError,
   StaleApprovalVersionError,
 } from "./errors.ts";
+import { validateRelevanceResult } from "./relevance/index.ts";
 import type {
   ApprovalRequest,
   AuditEvent,
@@ -682,19 +683,16 @@ function assertRelevanceScore(score: RelevanceScore): void {
   if (!isValidRelevanceScore(score)) {
     throw new InvalidRelevanceScoreError();
   }
-  requireCommandText("relevance.reason", score.reason);
-  requireCommandText("relevance.policyVersion", score.policyVersion);
+  validateRelevanceResult(score);
 }
 
 function isValidRelevanceScore(score: RelevanceScore): boolean {
-  return (
-    Number.isFinite(score.value) &&
-    Number.isFinite(score.threshold) &&
-    score.value >= 0 &&
-    score.value <= 100 &&
-    score.threshold >= 0 &&
-    score.threshold <= 100
-  );
+  try {
+    validateRelevanceResult(score);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function assertContext(context: TransitionContext): void {

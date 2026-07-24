@@ -45,12 +45,19 @@ conflito mesmo depois de reiniciar processo e conexão.
 | Tabela | Papel |
 | --- | --- |
 | `editorial_news` | estado e ponteiros atuais do agregado; inclui `lock_version` |
+| `editorial_relevance_results` | resultado completo e versionado da relevância em JSONB |
 | `draft_versions` | versões imutáveis, únicas por notícia e número |
 | `approval_requests` | solicitação vinculada a uma versão específica |
 | `approval_actions` | decisão humana e chave idempotente única |
 | `audit_events` | histórico append-only das transições |
 | `processed_commands` | chave, fingerprint e resultado persistido do comando |
 | `schema_migrations` | nome, checksum e data de cada migration aplicada |
+
+O JSONB `editorial_relevance_results.result` armazena o resultado determinístico
+completo. A migration incremental `002_relevance_policy_result.sql` cria essa
+relação um-para-um, faz backfill explícito de scores anteriores e cria índice
+por política e versão. A tabela principal mantém score e resumo compatível. A
+migration `001` não foi alterada.
 
 `approval_requests` foi incluída além da lista mínima porque o agregado atual
 modela explicitamente a solicitação que uma decisão resolve. O campo
@@ -152,6 +159,10 @@ Os 10 testes de integração da aplicação exercitam o fluxo pelo
 `EditorialWorkflowService`, reconexão, replay persistente, conflito de chave,
 disputa de versão, rollback e histórico final.
 
+Outros 10 testes PostgreSQL exercitam relevância completa, breakdown,
+penalidades, política, reconexão, execução pelo serviço, os dois caminhos de
+roteamento, rollback e idempotência.
+
 ## Segurança
 
 - bind exclusivo em `127.0.0.1`;
@@ -194,5 +205,6 @@ restauração. O volume nomeado não é um backup.
 - não há API nem integrações.
 
 O serviço de aplicação local já coordena transições e `save()` com versão
-esperada. A próxima fatia recomendada é somente uma política determinística de
-relevância com fixtures. Integrações externas devem continuar adiadas.
+esperada, incluindo a relevância determinística. A próxima fatia recomendada é
+somente uma política determinística de verificação com evidências fictícias.
+Integrações externas devem continuar adiadas.

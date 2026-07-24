@@ -52,7 +52,7 @@ flowchart LR
     B --> C["Adaptadores futuros"]
     C --> P["EditorialWorkflowService"]
     P --> D["Normalização e deduplicação"]
-    D --> E["Classificação de relevância"]
+    D --> E["Política determinística de relevância v1"]
     E --> F["Verificação e evidências"]
     F -->|verificado| G["Adaptador de LLM"]
     F -->|incerto| H["Revisão humana"]
@@ -124,9 +124,22 @@ Separar módulos dentro de um único processo reduz manutenção. Serviços pode
 ser extraídos apenas quando volume ou isolamento justificarem.
 
 Hoje, somente a máquina editorial, o serviço de aplicação e demos locais
-existem. API, worker e adaptadores externos continuam descrições futuras.
+existem. A política de relevância pura também está implementada no domínio.
+API, worker e adaptadores externos continuam descrições futuras.
 
-### 4.4 PostgreSQL
+### 4.4 Política determinística de relevância
+
+`calculateRelevance(input, policy)` recebe datas, indicadores e tipos
+explicitamente. A configuração versionada centraliza tópicos e aliases, seis
+pesos que somam 100, penalidades e thresholds. O resultado explicável é
+convertido em `ScoreNews`; o serviço executa o score e o roteamento, mas a
+máquina mantém autoridade sobre as transições.
+
+O resultado completo fica no JSONB de relevância e guarda a configuração
+necessária para reproduzir a decisão. Consulte
+[`RELEVANCE-POLICY.md`](RELEVANCE-POLICY.md).
+
+### 4.5 PostgreSQL
 
 - implementar `EditorialNewsRepository` no pacote de infraestrutura
   `packages/database`;
@@ -146,21 +159,21 @@ Detalhes estão em [`POSTGRESQL.md`](POSTGRESQL.md).
 Redis só deverá ser introduzido com evidência de que locks, fila ou cache no
 PostgreSQL não atendem ao volume.
 
-### 4.5 Fontes
+### 4.6 Fontes
 
 Cada adaptador deve coletar somente fontes aprovadas, preferindo RSS e APIs
 oficiais. Scraping genérico não faz parte do MVP. Cada registro guarda URL,
 horários de publicação, acontecimento e coleta, além de hash do conteúdo
 utilizado.
 
-### 4.6 Adaptador de LLM
+### 4.7 Adaptador de LLM
 
 O modelo recebe fatos e evidências selecionados, um template versionado e um
 schema de saída. O adaptador registra modelo, parâmetros, tokens, custo estimado,
 latência e hashes. O modelo não recebe credenciais, não publica e não escolhe
 sozinho se a notícia é verdadeira.
 
-### 4.7 Telegram
+### 4.8 Telegram
 
 O Telegram é uma interface de comando, não a fonte de verdade. O bot envia:
 
@@ -288,12 +301,13 @@ n8n e serviços internos não devem ser expostos diretamente à internet.
 1. fluxo local com fixtures — concluído;
 2. PostgreSQL local — concluído;
 3. camada de serviço de aplicação sem HTTP — concluída;
-4. política determinística de relevância com fixtures;
-5. n8n local, somente quando autorizado;
-6. uma fonte real, um LLM e Telegram, conectados separadamente;
-7. operação hospedada e endurecimento;
-8. painel web e calendário editorial;
-9. publicação autorizada;
-10. integração com Lead Flow Studio;
-11. avaliação de Hermes e agentes especializados;
-12. empacotamento multiempresa, com isolamento de tenants.
+4. política determinística de relevância com fixtures — concluída;
+5. política determinística de verificação com evidências fictícias;
+6. n8n local, somente quando autorizado;
+7. uma fonte real, um LLM e Telegram, conectados separadamente;
+8. operação hospedada e endurecimento;
+9. painel web e calendário editorial;
+10. publicação autorizada;
+11. integração com Lead Flow Studio;
+12. avaliação de Hermes e agentes especializados;
+13. empacotamento multiempresa, com isolamento de tenants.

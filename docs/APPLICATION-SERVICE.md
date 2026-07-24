@@ -10,6 +10,11 @@ esperada e devolve um resultado independente de infraestrutura.
 O serviço não implementa regras de transição, não conhece HTTP, n8n, Telegram,
 PostgreSQL, SQL ou variáveis de ambiente.
 
+Para relevância, `executeRelevanceWorkflow()` calcula a política pura e chama o
+mesmo serviço duas vezes: `ScoreNews` e depois `RequestVerification` ou
+`DiscardLowRelevance`. IDs, chaves, atores e horários dos dois comandos são
+obrigatórios e explícitos. A coordenação não muda a autoridade da máquina.
+
 ```mermaid
 flowchart TD
     A["Futuros adaptadores: HTTP, n8n ou Telegram"] --> B["EditorialCommandEnvelope"]
@@ -186,6 +191,18 @@ comando e confirma replay sem novo evento.
 
 Esses adaptadores devem depender do serviço, sem acessar diretamente a máquina
 ou o banco. Nenhum deles foi implementado nesta etapa.
+
+## Relevância determinística
+
+O serviço recebe um `RelevanceInput` e uma `RelevancePolicy`; não escolhe
+silenciosamente a versão. O resultado completo participa do fingerprint
+canônico de `ScoreNews`, portanto reutilizar a chave com breakdown, penalidade
+ou política diferente produz conflito idempotente.
+
+Uma falha no comando de roteamento deixa o agregado recuperável em `SCORED`;
+não existe uma transação distribuída entre dois comandos. Cada comando
+individual continua atômico. Consulte
+[`RELEVANCE-POLICY.md`](RELEVANCE-POLICY.md).
 
 ## Limitações
 

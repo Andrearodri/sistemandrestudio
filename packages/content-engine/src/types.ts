@@ -3,6 +3,7 @@ import type {
   IdempotencyKey,
   IsoDateTime,
 } from "../../shared/src/index.ts";
+import type { RelevanceResult } from "./relevance/relevance-types.ts";
 
 export const EDITORIAL_STATES = [
   "RECEIVED",
@@ -51,12 +52,7 @@ export interface Evidence {
   readonly summary: string;
 }
 
-export interface RelevanceScore {
-  readonly value: number;
-  readonly threshold: number;
-  readonly reason: string;
-  readonly policyVersion: string;
-}
+export type RelevanceScore = RelevanceResult;
 
 export interface VerificationResult {
   readonly outcome: "VERIFIED" | "REJECTED";

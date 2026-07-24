@@ -15,6 +15,7 @@ controle de versão. Tokens e chaves nunca pertencem a essas tabelas.
 | Tabela | Conteúdo atual |
 | --- | --- |
 | `editorial_news` | estado, fonte, título, URLs, relevância, verificação, ponteiros atuais e `lock_version` |
+| `editorial_relevance_results` | resultado explicável da política em JSONB, um por notícia |
 | `draft_versions` | corpo e metadados das versões imutáveis |
 | `approval_requests` | submissão e estado de uma versão |
 | `approval_actions` | decisão humana com chave idempotente |
@@ -28,6 +29,14 @@ futura entre `content_drafts` e `content_versions` foi reduzida a
 `draft_versions`, pois o agregado possui um único conjunto versionado por
 notícia. `base_content` permanece igual ao título normalizado até o domínio
 receber um campo próprio.
+
+`editorial_relevance_results.result` preserva o resultado explicável completo:
+score, breakdown, penalidades, tópicos, fatores, prioridade, decisão, política,
+pesos, thresholds e data de avaliação. JSONB foi escolhido porque critérios e
+explicações evoluem por versão; `editorial_news.relevance_score` permanece
+escalar e `editorial_news.relevance` mantém somente o resumo compatível. A
+migration `002` cria a tabela, faz backfill explícito de resultados legados e
+adiciona índice por política/versão.
 
 As foreign keys usam `ON DELETE RESTRICT`; versões são únicas por notícia e
 número; chaves idempotentes são únicas; e uma constraint diferida impede

@@ -19,6 +19,10 @@ export async function removePreviousEditorialDemo(
       newsId,
     ]);
     await client.query("DELETE FROM audit_events WHERE news_id = $1", [newsId]);
+    await client.query(
+      "DELETE FROM editorial_relevance_results WHERE news_id = $1",
+      [newsId],
+    );
     await client.query("DELETE FROM approval_requests WHERE news_id = $1", [
       newsId,
     ]);

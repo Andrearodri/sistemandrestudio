@@ -19,6 +19,7 @@ import type {
   HumanDecision,
   PersistedCommandResult,
   ProcessedCommand,
+  RelevanceResult,
 } from "../../content-engine/src/index.ts";
 import { withTransaction } from "./client.ts";
 import {
@@ -100,6 +101,10 @@ type ProcessedCommandRow = QueryResultRow & {
   };
 };
 
+type RelevanceResultRow = QueryResultRow & {
+  readonly result: RelevanceResult;
+};
+
 export class PostgresEditorialNewsRepository
   implements EditorialNewsRepository
 {
@@ -156,6 +161,7 @@ export class PostgresEditorialNewsRepository
           throw new ConcurrentUpdateError(entity.id, expectedVersion);
         }
 
+        await persistRelevanceResult(client, entity);
         await persistDraftVersions(client, entity);
         await persistApprovalRequests(client, entity);
         await persistApprovalActions(client, entity);
@@ -268,6 +274,15 @@ async function updateNews(
 }
 
 function newsParameters(entity: EditorialNews): unknown[] {
+  const relevanceSummary =
+    entity.relevance === null
+      ? null
+      : {
+          value: entity.relevance.value,
+          threshold: entity.relevance.threshold,
+          reason: entity.relevance.reason,
+          policyVersion: entity.relevance.policyVersion,
+        };
   return [
     entity.id,
     entity.state,
@@ -281,11 +296,27 @@ function newsParameters(entity: EditorialNews): unknown[] {
     entity.receivedAt,
     entity.duplicateOfNewsId,
     entity.relevance?.value ?? null,
-    entity.relevance === null ? null : JSON.stringify(entity.relevance),
+    relevanceSummary === null ? null : JSON.stringify(relevanceSummary),
     entity.verification === null
       ? null
       : JSON.stringify(entity.verification),
   ];
+}
+
+async function persistRelevanceResult(
+  client: PoolClient,
+  entity: EditorialNews,
+): Promise<void> {
+  if (entity.relevance === null) {
+    return;
+  }
+  await client.query(
+    `INSERT INTO editorial_relevance_results (news_id, result)
+     VALUES ($1, $2::jsonb)
+     ON CONFLICT (news_id) DO UPDATE
+     SET result = EXCLUDED.result`,
+    [entity.id, JSON.stringify(entity.relevance)],
+  );
 }
 
 async function persistDraftVersions(
@@ -544,6 +575,12 @@ async function loadAggregate(
      ORDER BY occurred_at, id`,
     [id],
   );
+  const relevance = await client.query<RelevanceResultRow>(
+    `SELECT result
+     FROM editorial_relevance_results
+     WHERE news_id = $1`,
+    [id],
+  );
 
   return {
     id: news.id,
@@ -556,7 +593,7 @@ async function loadAggregate(
     receivedAt: iso(news.received_at),
     state: news.state,
     duplicateOfNewsId: news.duplicate_of_news_id,
-    relevance: news.relevance,
+    relevance: relevance.rows[0]?.result ?? news.relevance,
     verification: news.verification_result,
     draftVersions: drafts.rows.map(mapDraftVersion),
     currentDraftVersionId: news.current_draft_version_id,

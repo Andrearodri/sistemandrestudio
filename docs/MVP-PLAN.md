@@ -419,15 +419,30 @@ estruturado, erros estáveis, 15 testes unitários, 10 testes PostgreSQL e demos
 com replay após reconexão. Consulte
 [`APPLICATION-SERVICE.md`](APPLICATION-SERVICE.md).
 
-### Etapa 4 — classificação e verificação com fixtures
+### Etapa 4 — política determinística de relevância
 
-- implementar normalização, fingerprint, relevância e política editorial;
+**Status:** concluída localmente em 24 de julho de 2026, na rodada autorizada
+como “Etapa 5 — Política determinística de relevância”.
+
+- centralizar tópicos, aliases, pesos, thresholds e penalidades;
+- calcular breakdown explicável sem rede, relógio ou IA;
+- integrar `ScoreNews` e os caminhos de verificação ou descarte;
+- persistir o resultado versionado em JSONB;
+- testar memória, PostgreSQL, reconexão e idempotência.
+
+**Saída obtida:** `andre-studio-relevance-v1`, 25 testes unitários, 10 testes
+PostgreSQL, oito fixtures e duas demos. Consulte
+[`RELEVANCE-POLICY.md`](RELEVANCE-POLICY.md).
+
+### Etapa 5 — verificação determinística com fixtures
+
 - simular evidências convergentes e conflitantes;
-- provar os caminhos `VERIFIED`, `REJECTED` e `MANUAL_REVIEW`.
+- separar fato, interpretação, rumor e opinião;
+- provar os caminhos `VERIFIED`, `REJECTED` e revisão humana.
 
 **Saída:** verificação testável, ainda sem fontes reais.
 
-### Etapa 5 — n8n local
+### Etapa 6 — n8n local
 
 - criar um workflow mínimo versionado;
 - orquestrar as operações idempotentes;
@@ -435,7 +450,7 @@ com replay após reconexão. Consulte
 
 **Saída:** fluxo determinístico local com dados simulados.
 
-### Etapa 6 — integrações, uma por vez
+### Etapa 7 — integrações, uma por vez
 
 1. uma fonte RSS/API aprovada;
 2. um provedor de LLM com orçamento;
@@ -445,7 +460,7 @@ Cada integração deve passar por teste isolado e revisão antes da seguinte.
 
 **Saída:** trilha real de ponta a ponta, sem publicação.
 
-### Etapa 7 — endurecimento e operação
+### Etapa 8 — endurecimento e operação
 
 - métricas de sucesso, erro, latência e custo;
 - backup e restauração;
@@ -538,8 +553,8 @@ Antes das integrações reais, será necessário decidir:
 
 ## 15. Recomendação imediata
 
-O núcleo, a persistência PostgreSQL e o serviço de aplicação local com dados
-fictícios foram concluídos. Após nova autorização, a próxima fatia deve
-implementar somente uma política determinística de relevância com fixtures,
-sem fonte real ou LLM. Integrações externas continuam fora do escopo e o MVP
-não está concluído.
+O núcleo, a persistência PostgreSQL, o serviço de aplicação e a política
+determinística de relevância com dados fictícios foram concluídos. Após nova
+autorização, a próxima fatia pequena deve implementar somente uma política
+determinística de verificação com evidências fictícias, sem fonte real ou LLM.
+Integrações externas continuam fora do escopo e o MVP não está concluído.

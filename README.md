@@ -17,8 +17,8 @@ conteúdo.
 > [!IMPORTANT]
 > O projeto está em fase inicial. O núcleo local da máquina de estados está
 > implementado, o adaptador PostgreSQL está disponível e o serviço de aplicação
-> coordena os casos de uso. Ainda não há API HTTP, integração externa ou
-> publicação.
+> coordena os casos de uso. A relevância agora usa uma política determinística
+> versionada. Ainda não há API HTTP, integração externa ou publicação.
 
 ## Estado atual
 
@@ -26,11 +26,14 @@ O núcleo TypeScript e a primeira persistência local foram implementados:
 
 - o workspace usa npm workspaces e TypeScript estrito;
 - a máquina editorial possui 29 testes unitários, fixtures e demonstração local;
+- a política `andre-studio-relevance-v1` possui 25 testes unitários, seis
+  critérios, penalidades explícitas e oito fixtures;
 - o PostgreSQL possui migrations SQL, constraints, transações, idempotência
   persistente, concorrência otimista e testes de integração;
 - `EditorialWorkflowService` valida envelopes, coordena transições e persiste
   resultados sem conhecer PostgreSQL;
 - o serviço possui 15 testes unitários e 10 testes de integração próprios;
+- o fluxo de relevância possui mais 10 testes PostgreSQL pelo serviço;
 - as demonstrações em memória e persistente são comandos separados;
 - Git `2.50.1`, Node.js `24.14.0` e npm `11.9.0` estão disponíveis;
 - Docker `29.5.3` e Docker Compose `v5.1.4` estão disponíveis;
@@ -111,6 +114,7 @@ dados e as regras de segurança estão em:
 - [`docs/SECURITY.md`](docs/SECURITY.md);
 - [`docs/STATE-MACHINE.md`](docs/STATE-MACHINE.md);
 - [`docs/APPLICATION-SERVICE.md`](docs/APPLICATION-SERVICE.md);
+- [`docs/RELEVANCE-POLICY.md`](docs/RELEVANCE-POLICY.md);
 - [`docs/POSTGRESQL.md`](docs/POSTGRESQL.md).
 
 ## Tecnologias em avaliação
@@ -140,6 +144,8 @@ sistemandrestudio/
 │       └── src/
 │           ├── demo-application.ts
 │           ├── demo-application-postgres.ts
+│           ├── demo-relevance.ts
+│           ├── demo-relevance-postgres.ts
 │           ├── demo.ts
 │           └── demo-postgres.ts
 ├── packages/
@@ -185,6 +191,7 @@ Scripts disponíveis:
 npm run typecheck
 npm run test
 npm run test:application
+npm run test:relevance
 npm run build
 npm run test:watch
 npm run demo
@@ -196,6 +203,8 @@ npm run test:application:integration
 npm run demo:postgres
 npm run demo:application
 npm run demo:application:postgres
+npm run demo:relevance
+npm run demo:relevance:postgres
 docker compose down
 ```
 
@@ -212,9 +221,10 @@ e solução de problemas estão em [`docs/POSTGRESQL.md`](docs/POSTGRESQL.md).
 
 ## Próximo marco
 
-Após nova autorização, o próximo marco recomendado é implementar somente uma
-política determinística de relevância com fixtures, ainda sem fonte real, LLM
-ou integração externa. O MVP completo não está concluído.
+Após nova autorização, o próximo marco pequeno recomendado é implementar
+somente uma política determinística de verificação com evidências fictícias.
+Fonte real, LLM e integrações externas continuam adiados. O MVP completo não
+está concluído.
 
 ## Execução futura
 
