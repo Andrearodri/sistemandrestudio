@@ -189,3 +189,24 @@ O runbook futuro deve permitir:
 - conceder permissões de publicação;
 - executar comandos destrutivos;
 - adicionar Hermes ou ampliar permissões de um agente.
+
+## 14. Radar de fontes oficiais
+
+O radar aceita somente URLs HTTPS do catálogo versionado, com hosts permitidos
+por fonte. As requisições são somente `GET`, sem autenticação, e têm timeout,
+limite de resposta, limite de redirecionamento e validação de content type. Cada
+redirect é revalidado; credenciais embutidas na URL, localhost, loopback,
+endereços IPv4 privados e formas privadas usuais de IPv6 são rejeitados mesmo
+se um catálogo malformado tentasse permiti-los.
+
+A resolução DNS não é fixada ao endereço previamente validado. O risco residual
+de DNS rebinding é reduzido porque não há URL fornecida por usuário e somente
+cinco domínios oficiais fixos são aceitos. Um ambiente futuro com egress
+controlado deve reforçar essa garantia na rede, sem depender apenas da
+aplicação.
+
+XML com DTD ou entidades ativas é rejeitado. Um `DOCTYPE` dentro de `CDATA`
+permanece texto não confiável e não é interpretado pelo parser XML. HTML do
+feed é tratado como dado, tem tamanho limitado e nunca é executado. Logs
+registram somente códigos, metadados técnicos e contagens. Nunca inclua `.env`,
+volumes PostgreSQL, tokens ou URLs completas de conexão no Git.

@@ -259,3 +259,6 @@ Os prazos acima são hipóteses, não decisões finais. Antes de dados reais:
 4. definir exclusão, anonimização e backup;
 5. limitar quem pode consultar exportações;
 6. documentar exceções para auditoria.
+# Modelo de dados
+
+Além das entidades editoriais, a migração incremental `003_official_source_radar.sql` adiciona `source_definitions`, `source_fetch_runs`, `collected_source_items` e `source_item_duplicates`. Esses registros separam a evidência da coleta da decisão editorial, preservando URL canônica, hash, origem, execução e duplicidade sem guardar respostas brutas do feed.

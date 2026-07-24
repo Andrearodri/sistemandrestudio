@@ -208,3 +208,6 @@ O serviço de aplicação local já coordena transições e `save()` com versão
 esperada, incluindo a relevância determinística. A próxima fatia recomendada é
 somente uma política determinística de verificação com evidências fictícias.
 Integrações externas devem continuar adiadas.
+# PostgreSQL
+
+A migração 003 é aditiva: não altera migrações nem tabelas editoriais existentes. O adaptador do radar grava somente no banco configurado localmente; o volume do Compose deve ser preservado com `docker compose down`, nunca `down -v`.

@@ -1,5 +1,12 @@
 # sistemandrestudio
 
+O MVP inclui um radar de fontes oficiais em modo somente leitura: feed público → normalização → deduplicação → relevância → persistência → relatório local. Veja [as fontes oficiais](docs/OFFICIAL-SOURCES.md) e a [operação do radar](docs/RADAR-OPERATIONS.md). Não há publicação, integração Telegram, LLM, n8n ou acesso a contas nesta etapa.
+
+A estabilização pode ser verificada com `npm run radar:fixtures` e, com o
+PostgreSQL local ativo, `npm run radar:validate`. O segundo comando usa somente
+o banco terminado em `_test`, limita os itens e comprova duas rodadas
+idempotentes. Isso não significa que o MVP esteja concluído.
+
 Sistema operacional com IA para apoiar a operação solo da AndreStudio.dev. O
 projeto pretende reunir automações, inteligência artificial, aprovação humana e
 memória operacional em uma base controlável e auditável.

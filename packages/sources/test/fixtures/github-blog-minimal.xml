@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"
+  xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Official Example Blog</title>
+    <item>
+      <guid isPermaLink="false">official-example-1</guid>
+      <title><![CDATA[Official API update]]></title>
+      <link>https://github.blog/example/official-api-update/?utm_source=fixture</link>
+      <description><![CDATA[An official, minimal summary.]]></description>
+      <content:encoded><![CDATA[<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN"><html><body><p>Untrusted article data.</p></body></html>]]></content:encoded>
+      <pubDate>Fri, 24 Jul 2026 10:00:00 GMT</pubDate>
+    </item>
+  </channel>
+</rss>
