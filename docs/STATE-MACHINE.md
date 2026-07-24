@@ -84,6 +84,10 @@ stateDiagram-v2
 `TransitionContext` fornece `eventId`, ator e horário. Isso impede dependência
 oculta de relógio ou gerador de UUID.
 
+O contrato do repositório também consulta comandos processados. Essa capacidade
+é usada pela camada de aplicação para idempotência entre agregados e após
+reinício; não altera as regras de `transition()`.
+
 ## 6. Eventos
 
 Cada transição efetiva acrescenta um `AuditEvent` com:
@@ -199,7 +203,7 @@ npm run demo
 
 ## 13. Evolução futura
 
-1. adicionar uma camada de serviço que coordene transição e persistência;
+1. adicionar políticas determinísticas de classificação e verificação;
 2. mapear workflows n8n para comandos explícitos;
 3. mapear callbacks autenticados do Telegram para decisões humanas;
 4. ligar um adaptador de LLM somente ao comando `CreateDraft`;

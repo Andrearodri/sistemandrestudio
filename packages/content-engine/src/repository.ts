@@ -1,11 +1,29 @@
 import { ConcurrentUpdateError, EntityNotFoundError } from "./errors.ts";
-import type { AuditEvent, EditorialNews } from "./types.ts";
+import type {
+  AuditEvent,
+  EditorialNews,
+  ProcessedCommand,
+} from "./types.ts";
+
+export interface PersistedCommandResult {
+  readonly idempotencyKey: string;
+  readonly commandType: ProcessedCommand["commandType"];
+  readonly fingerprint: string;
+  readonly newsId: string;
+  readonly result: {
+    readonly state: EditorialNews["state"];
+    readonly auditEventCount: number;
+  };
+}
 
 export interface EditorialNewsRepository {
   findById(id: string): Promise<EditorialNews | undefined>;
   getById(id: string): Promise<EditorialNews>;
   save(entity: EditorialNews, expectedVersion?: number): Promise<void>;
   listAuditEvents(entityId: string): Promise<readonly AuditEvent[]>;
+  findProcessedCommand(
+    idempotencyKey: string,
+  ): Promise<PersistedCommandResult | undefined>;
 }
 
 export class InMemoryEditorialNewsRepository
@@ -45,5 +63,37 @@ export class InMemoryEditorialNewsRepository
 
   async listAuditEvents(entityId: string): Promise<readonly AuditEvent[]> {
     return (await this.getById(entityId)).auditEvents;
+  }
+
+  async findProcessedCommand(
+    idempotencyKey: string,
+  ): Promise<PersistedCommandResult | undefined> {
+    for (const entity of this.#entities.values()) {
+      const command = entity.processedCommands.find(
+        (item) => item.idempotencyKey === idempotencyKey,
+      );
+      if (command === undefined) {
+        continue;
+      }
+
+      const eventIndex = entity.auditEvents.findIndex(
+        (event) => event.idempotencyKey === idempotencyKey,
+      );
+      const event =
+        eventIndex === -1 ? undefined : entity.auditEvents[eventIndex];
+
+      return {
+        idempotencyKey,
+        commandType: command.commandType,
+        fingerprint: command.fingerprint,
+        newsId: entity.id,
+        result: {
+          state: event?.newState ?? "RECEIVED",
+          auditEventCount: eventIndex + 1,
+        },
+      };
+    }
+
+    return undefined;
   }
 }

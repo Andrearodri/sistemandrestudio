@@ -16,8 +16,9 @@ conteúdo.
 
 > [!IMPORTANT]
 > O projeto está em fase inicial. O núcleo local da máquina de estados está
-> implementado e o adaptador PostgreSQL local está disponível. Ainda não há API
-> HTTP, integração externa ou publicação.
+> implementado, o adaptador PostgreSQL está disponível e o serviço de aplicação
+> coordena os casos de uso. Ainda não há API HTTP, integração externa ou
+> publicação.
 
 ## Estado atual
 
@@ -27,6 +28,9 @@ O núcleo TypeScript e a primeira persistência local foram implementados:
 - a máquina editorial possui 29 testes unitários, fixtures e demonstração local;
 - o PostgreSQL possui migrations SQL, constraints, transações, idempotência
   persistente, concorrência otimista e testes de integração;
+- `EditorialWorkflowService` valida envelopes, coordena transições e persiste
+  resultados sem conhecer PostgreSQL;
+- o serviço possui 15 testes unitários e 10 testes de integração próprios;
 - as demonstrações em memória e persistente são comandos separados;
 - Git `2.50.1`, Node.js `24.14.0` e npm `11.9.0` estão disponíveis;
 - Docker `29.5.3` e Docker Compose `v5.1.4` estão disponíveis;
@@ -70,7 +74,10 @@ RSS/API permitida
 n8n (agenda e orquestração previsível)
        │
        ▼
-Aplicação Node.js/TypeScript
+EditorialWorkflowService
+       │
+       ▼
+Domínio Node.js/TypeScript
   ├─ normalização e deduplicação
   ├─ regras de verificação
   ├─ geração assistida por LLM
@@ -85,8 +92,8 @@ Responsabilidades:
 - **n8n:** agenda, encadeia etapas, aplica tentativas controladas e observa
   timeouts. Não guarda o estado de negócio definitivo.
 - **Aplicação Node.js/TypeScript:** concentra regras, contratos, idempotência,
-  integrações e testes. A proposta inicial é um monólito modular, não
-  microserviços.
+  coordenação e testes. A proposta inicial é um monólito modular, não
+  microserviços. Regras editoriais permanecem no domínio.
 - **PostgreSQL:** guarda notícias, evidências, rascunhos, aprovações, execuções e
   eventos de auditoria.
 - **Telegram:** interface humana de aprovação. No desenvolvimento local, o bot
@@ -103,6 +110,7 @@ dados e as regras de segurança estão em:
 - [`docs/DATA-MODEL.md`](docs/DATA-MODEL.md);
 - [`docs/SECURITY.md`](docs/SECURITY.md);
 - [`docs/STATE-MACHINE.md`](docs/STATE-MACHINE.md);
+- [`docs/APPLICATION-SERVICE.md`](docs/APPLICATION-SERVICE.md);
 - [`docs/POSTGRESQL.md`](docs/POSTGRESQL.md).
 
 ## Tecnologias em avaliação
@@ -130,9 +138,12 @@ sistemandrestudio/
 ├── apps/
 │   └── sistemandrestudio-api/
 │       └── src/
+│           ├── demo-application.ts
+│           ├── demo-application-postgres.ts
 │           ├── demo.ts
 │           └── demo-postgres.ts
 ├── packages/
+│   ├── application/           # envelope e serviço de coordenação
 │   ├── database/              # adapter, migrations e testes PostgreSQL
 │   ├── shared/src/            # ator, timestamp e idempotência
 │   └── content-engine/src/    # máquina, fixtures e repositório em memória
@@ -173,6 +184,7 @@ Scripts disponíveis:
 ```bash
 npm run typecheck
 npm run test
+npm run test:application
 npm run build
 npm run test:watch
 npm run demo
@@ -180,14 +192,19 @@ npm run demo
 docker compose up -d
 npm run db:migrate
 npm run test:integration
+npm run test:application:integration
 npm run demo:postgres
+npm run demo:application
+npm run demo:application:postgres
 docker compose down
 ```
 
 O comando `demo` executa uma notícia totalmente fictícia, imprime as transições,
 o histórico de auditoria e termina em `READY_FOR_PUBLICATION`. `demo:postgres`
 persiste cada etapa, fecha a conexão, abre outra e recupera o mesmo agregado.
-Nenhum dos dois inicia servidor HTTP ou integração externa.
+As duas demos `demo:application*` executam o mesmo tipo de fluxo pelo serviço;
+a versão PostgreSQL também confirma replay depois da reconexão. Nenhuma inicia
+servidor HTTP ou integração externa.
 
 Use `.env.local.example` e `.env.test.example` como referência. Os arquivos
 locais reais ficam ignorados. O banco usa por padrão `127.0.0.1:55432`; detalhes
@@ -195,8 +212,8 @@ e solução de problemas estão em [`docs/POSTGRESQL.md`](docs/POSTGRESQL.md).
 
 ## Próximo marco
 
-Após nova autorização, o próximo marco recomendado é criar uma camada de serviço
-de aplicação pequena que coordene uma transição e sua gravação, ainda sem HTTP
+Após nova autorização, o próximo marco recomendado é implementar somente uma
+política determinística de relevância com fixtures, ainda sem fonte real, LLM
 ou integração externa. O MVP completo não está concluído.
 
 ## Execução futura

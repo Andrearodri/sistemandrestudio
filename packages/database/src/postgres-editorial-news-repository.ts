@@ -17,6 +17,7 @@ import type {
   EditorialNews,
   EditorialNewsRepository,
   HumanDecision,
+  PersistedCommandResult,
   ProcessedCommand,
 } from "../../content-engine/src/index.ts";
 import { withTransaction } from "./client.ts";
@@ -98,17 +99,6 @@ type ProcessedCommandRow = QueryResultRow & {
     readonly auditEventCount: number;
   };
 };
-
-export interface PersistedCommandResult {
-  readonly idempotencyKey: string;
-  readonly commandType: ProcessedCommand["commandType"];
-  readonly fingerprint: string;
-  readonly newsId: string;
-  readonly result: {
-    readonly state: EditorialNews["state"];
-    readonly auditEventCount: number;
-  };
-}
 
 export class PostgresEditorialNewsRepository
   implements EditorialNewsRepository

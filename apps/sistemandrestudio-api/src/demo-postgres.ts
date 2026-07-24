@@ -8,8 +8,8 @@ import {
   createDatabasePool,
   loadDatabaseConfig,
   runMigrations,
-  withTransaction,
 } from "../../../packages/database/src/index.ts";
+import { removePreviousEditorialDemo } from "./demo-postgres-support.ts";
 
 const config = loadDatabaseConfig();
 const firstPool = createDatabasePool(config);
@@ -17,7 +17,10 @@ const firstPool = createDatabasePool(config);
 try {
   await checkDatabaseConnection(firstPool);
   await runMigrations(firstPool);
-  await removePreviousDemo(firstPool, APPROVED_SCENARIO.initialNews.id);
+  await removePreviousEditorialDemo(
+    firstPool,
+    APPROVED_SCENARIO.initialNews.id,
+  );
 
   const repository = new PostgresEditorialNewsRepository(firstPool);
   await repository.save(APPROVED_SCENARIO.initialNews, 0);
@@ -60,30 +63,4 @@ try {
   );
 } finally {
   await secondPool.end();
-}
-
-async function removePreviousDemo(
-  pool: ReturnType<typeof createDatabasePool>,
-  newsId: string,
-): Promise<void> {
-  await withTransaction(pool, async (client) => {
-    await client.query(
-      "UPDATE editorial_news SET state = 'RECEIVED', current_draft_version_id = NULL, current_approval_request_id = NULL WHERE id = $1",
-      [newsId],
-    );
-    await client.query("DELETE FROM approval_actions WHERE news_id = $1", [
-      newsId,
-    ]);
-    await client.query("DELETE FROM processed_commands WHERE news_id = $1", [
-      newsId,
-    ]);
-    await client.query("DELETE FROM audit_events WHERE news_id = $1", [newsId]);
-    await client.query("DELETE FROM approval_requests WHERE news_id = $1", [
-      newsId,
-    ]);
-    await client.query("DELETE FROM draft_versions WHERE news_id = $1", [
-      newsId,
-    ]);
-    await client.query("DELETE FROM editorial_news WHERE id = $1", [newsId]);
-  });
 }

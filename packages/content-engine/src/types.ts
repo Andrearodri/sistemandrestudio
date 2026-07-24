@@ -104,10 +104,14 @@ export interface HumanDecision {
 }
 
 export interface ProcessedCommand {
-  readonly commandType: EditorialCommand["type"];
+  readonly commandType: ProcessedCommandType;
   readonly fingerprint: string;
   readonly idempotencyKey: IdempotencyKey;
 }
+
+export type ProcessedCommandType =
+  | EditorialCommand["type"]
+  | "ReceiveNews";
 
 export interface AuditEvent {
   readonly id: string;

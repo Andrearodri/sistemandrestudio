@@ -36,6 +36,10 @@ O contrato ficou assíncrono porque tanto a memória quanto o PostgreSQL precisa
 ser intercambiáveis sem expor tipos de infraestrutura. A API pública
 `transition()` da máquina de estados não mudou.
 
+O contrato também expõe `findProcessedCommand()`. O serviço de aplicação usa
+essa consulta antes de carregar e transicionar o agregado, permitindo replay ou
+conflito mesmo depois de reiniciar processo e conexão.
+
 ## Modelo implementado
 
 | Tabela | Papel |
@@ -119,7 +123,9 @@ npm run db:migrate:test
 npm run db:reset:test
 
 npm run test:integration
+npm run test:application:integration
 npm run demo:postgres
+npm run demo:application:postgres
 
 docker compose down
 ```
@@ -141,6 +147,10 @@ rollback, aprovação obrigatória e nova conexão.
 
 Os testes são independentes da internet e não substituem os 29 testes unitários
 da máquina de estados.
+
+Os 10 testes de integração da aplicação exercitam o fluxo pelo
+`EditorialWorkflowService`, reconexão, replay persistente, conflito de chave,
+disputa de versão, rollback e histórico final.
 
 ## Segurança
 
@@ -183,6 +193,6 @@ restauração. O volume nomeado não é um backup.
 - não há processamento distribuído ou fila;
 - não há API nem integrações.
 
-A próxima fatia recomendada é um pequeno serviço de aplicação local, ainda sem
-HTTP, que coordene uma transição e um `save()` com versão esperada. Integrações
-externas devem continuar adiadas.
+O serviço de aplicação local já coordena transições e `save()` com versão
+esperada. A próxima fatia recomendada é somente uma política determinística de
+relevância com fixtures. Integrações externas devem continuar adiadas.

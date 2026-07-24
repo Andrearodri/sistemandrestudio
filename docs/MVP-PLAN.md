@@ -324,7 +324,7 @@ scaffolding vazio.
 
 ### Necessárias para a próxima fatia autorizada
 
-- uma camada de serviço de aplicação que coordene transição e persistência;
+- uma política determinística de relevância baseada em fixtures;
 - nenhum pacote adicional é necessário até existir uma integração autorizada;
 - n8n permanece futuro, quando a orquestração do fluxo for conectada.
 
@@ -403,7 +403,23 @@ versionada, concorrência otimista, idempotência apoiada por constraints, banco
 de teste isolado, testes de integração e demo que fecha e reabre a conexão.
 Consulte [`POSTGRESQL.md`](POSTGRESQL.md).
 
-### Etapa 3 — classificação e verificação com fixtures
+### Etapa 3 — serviço de aplicação local
+
+**Status:** concluída em 24 de julho de 2026, na rodada autorizada como
+“Etapa 4 — Serviço de aplicação editorial”.
+
+- validar envelopes explícitos;
+- coordenar criação, transição e persistência;
+- aplicar fingerprint canônico e idempotência persistente;
+- propagar concorrência sem retry automático;
+- testar com memória e PostgreSQL.
+
+**Saída obtida:** `EditorialWorkflowService`, comando `ReceiveNews`, resultado
+estruturado, erros estáveis, 15 testes unitários, 10 testes PostgreSQL e demos
+com replay após reconexão. Consulte
+[`APPLICATION-SERVICE.md`](APPLICATION-SERVICE.md).
+
+### Etapa 4 — classificação e verificação com fixtures
 
 - implementar normalização, fingerprint, relevância e política editorial;
 - simular evidências convergentes e conflitantes;
@@ -411,7 +427,7 @@ Consulte [`POSTGRESQL.md`](POSTGRESQL.md).
 
 **Saída:** verificação testável, ainda sem fontes reais.
 
-### Etapa 4 — n8n local
+### Etapa 5 — n8n local
 
 - criar um workflow mínimo versionado;
 - orquestrar as operações idempotentes;
@@ -419,7 +435,7 @@ Consulte [`POSTGRESQL.md`](POSTGRESQL.md).
 
 **Saída:** fluxo determinístico local com dados simulados.
 
-### Etapa 5 — integrações, uma por vez
+### Etapa 6 — integrações, uma por vez
 
 1. uma fonte RSS/API aprovada;
 2. um provedor de LLM com orçamento;
@@ -429,7 +445,7 @@ Cada integração deve passar por teste isolado e revisão antes da seguinte.
 
 **Saída:** trilha real de ponta a ponta, sem publicação.
 
-### Etapa 6 — endurecimento e operação
+### Etapa 7 — endurecimento e operação
 
 - métricas de sucesso, erro, latência e custo;
 - backup e restauração;
@@ -522,7 +538,8 @@ Antes das integrações reais, será necessário decidir:
 
 ## 15. Recomendação imediata
 
-O núcleo e a persistência PostgreSQL local com dados fictícios foram concluídos.
-Após nova autorização, a próxima fatia deve implementar somente uma pequena
-camada de serviço que coordene uma transição e sua gravação, ainda sem HTTP.
-Integrações externas continuam fora do escopo e o MVP não está concluído.
+O núcleo, a persistência PostgreSQL e o serviço de aplicação local com dados
+fictícios foram concluídos. Após nova autorização, a próxima fatia deve
+implementar somente uma política determinística de relevância com fixtures,
+sem fonte real ou LLM. Integrações externas continuam fora do escopo e o MVP
+não está concluído.

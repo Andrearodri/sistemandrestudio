@@ -114,6 +114,12 @@ público. A mudança para webhook exige revisão de rede e autorização.
 - acesso aos logs é restrito;
 - alertas não incluem tokens nem conteúdo integral.
 
+O serviço de aplicação não gera IDs, atores ou horários e não acessa variáveis
+de ambiente. O fingerprint inclui somente campos editoriais explicitamente
+permitidos; credenciais e configuração não participam. Erros públicos usam
+códigos estáveis e contexto mínimo, enquanto a causa técnica permanece interna
+e não deve ser serializada diretamente.
+
 ## 9. PostgreSQL local
 
 - o Compose publica somente `127.0.0.1:55432`, nunca `0.0.0.0`;

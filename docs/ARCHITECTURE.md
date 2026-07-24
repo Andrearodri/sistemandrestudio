@@ -49,8 +49,9 @@ aprovação humana e escopo mínimo.
 ```mermaid
 flowchart LR
     A["RSS, APIs e páginas oficiais permitidas"] --> B["n8n: agenda e orquestração"]
-    B --> C["API/worker TypeScript"]
-    C --> D["Normalização e deduplicação"]
+    B --> C["Adaptadores futuros"]
+    C --> P["EditorialWorkflowService"]
+    P --> D["Normalização e deduplicação"]
     D --> E["Classificação de relevância"]
     E --> F["Verificação e evidências"]
     F -->|verificado| G["Adaptador de LLM"]
@@ -88,7 +89,24 @@ do estado.
 Não deve conter regras editoriais complexas nem ser usado como banco de negócio.
 Não será instalado globalmente.
 
-### 4.2 Aplicação `sistemandrestudio-api`
+### 4.2 Serviço de aplicação editorial
+
+`EditorialWorkflowService` está implementado no pacote `application` e:
+
+- valida o envelope recebido;
+- consulta idempotência persistente;
+- cria ou carrega o agregado;
+- compara a versão esperada;
+- chama `transition()`;
+- persiste o resultado atomicamente;
+- devolve um resultado sem tipos de infraestrutura.
+
+Todos os IDs, atores e horários entram explicitamente. O fingerprint usa
+SHA-256 nativo sobre uma representação canônica. O serviço não importa `pg`,
+SQL, ambiente ou Docker. Consulte
+[`APPLICATION-SERVICE.md`](APPLICATION-SERVICE.md).
+
+### 4.3 Adaptadores futuros em `sistemandrestudio-api`
 
 Um monólito modular Node.js/TypeScript deve conter:
 
@@ -105,10 +123,10 @@ Um monólito modular Node.js/TypeScript deve conter:
 Separar módulos dentro de um único processo reduz manutenção. Serviços poderão
 ser extraídos apenas quando volume ou isolamento justificarem.
 
-Hoje, somente a máquina editorial e duas demos locais existem. API, worker e
-adaptadores externos continuam descrições futuras.
+Hoje, somente a máquina editorial, o serviço de aplicação e demos locais
+existem. API, worker e adaptadores externos continuam descrições futuras.
 
-### 4.3 PostgreSQL
+### 4.4 PostgreSQL
 
 - implementar `EditorialNewsRepository` no pacote de infraestrutura
   `packages/database`;
@@ -128,21 +146,21 @@ Detalhes estão em [`POSTGRESQL.md`](POSTGRESQL.md).
 Redis só deverá ser introduzido com evidência de que locks, fila ou cache no
 PostgreSQL não atendem ao volume.
 
-### 4.4 Fontes
+### 4.5 Fontes
 
 Cada adaptador deve coletar somente fontes aprovadas, preferindo RSS e APIs
 oficiais. Scraping genérico não faz parte do MVP. Cada registro guarda URL,
 horários de publicação, acontecimento e coleta, além de hash do conteúdo
 utilizado.
 
-### 4.5 Adaptador de LLM
+### 4.6 Adaptador de LLM
 
 O modelo recebe fatos e evidências selecionados, um template versionado e um
 schema de saída. O adaptador registra modelo, parâmetros, tokens, custo estimado,
 latência e hashes. O modelo não recebe credenciais, não publica e não escolhe
 sozinho se a notícia é verdadeira.
 
-### 4.6 Telegram
+### 4.7 Telegram
 
 O Telegram é uma interface de comando, não a fonte de verdade. O bot envia:
 
@@ -269,12 +287,13 @@ n8n e serviços internos não devem ser expostos diretamente à internet.
 
 1. fluxo local com fixtures — concluído;
 2. PostgreSQL local — concluído;
-3. camada de serviço de aplicação sem HTTP;
-4. n8n local, somente quando autorizado;
-5. uma fonte real, um LLM e Telegram, conectados separadamente;
-6. operação hospedada e endurecimento;
-7. painel web e calendário editorial;
-8. publicação autorizada;
-9. integração com Lead Flow Studio;
-10. avaliação de Hermes e agentes especializados;
-11. empacotamento multiempresa, com isolamento de tenants.
+3. camada de serviço de aplicação sem HTTP — concluída;
+4. política determinística de relevância com fixtures;
+5. n8n local, somente quando autorizado;
+6. uma fonte real, um LLM e Telegram, conectados separadamente;
+7. operação hospedada e endurecimento;
+8. painel web e calendário editorial;
+9. publicação autorizada;
+10. integração com Lead Flow Studio;
+11. avaliação de Hermes e agentes especializados;
+12. empacotamento multiempresa, com isolamento de tenants.
