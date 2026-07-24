@@ -15,10 +15,10 @@ rede de agentes.
 | Tecnologia | Decisão para o MVP | Justificativa |
 | --- | --- | --- |
 | Node.js + TypeScript | Adotar | Alinhado ao conhecimento existente e adequado para API, workers e integrações |
-| PostgreSQL | Adotar | Transações, constraints, busca e auditoria no mesmo banco |
+| PostgreSQL | Implementado localmente | Transações, constraints, idempotência e auditoria no mesmo banco |
 | n8n | Adotar de forma limitada | Bom para agenda, retries e fluxo previsível; não será fonte de verdade |
 | Telegram Bot | Adotar quando autorizado | Interface remota simples para aprovação humana |
-| Docker Compose | Adotar na etapa local | Reprodutibilidade sem instalação global de n8n/PostgreSQL |
+| Docker Compose | Implementado para PostgreSQL | Reprodutibilidade com um único container local |
 | API de LLM | Usar por adaptador | Permite trocar modelo/provedor e limitar custos |
 | Redis | Não usar inicialmente | PostgreSQL e jobs simples bastam até haver evidência de contenção ou fila |
 | Hermes Agent | Adiar para a fase 2 | O fluxo inicial é previsível e não exige supervisor autônomo |
@@ -105,14 +105,25 @@ Um monólito modular Node.js/TypeScript deve conter:
 Separar módulos dentro de um único processo reduz manutenção. Serviços poderão
 ser extraídos apenas quando volume ou isolamento justificarem.
 
+Hoje, somente a máquina editorial e duas demos locais existem. API, worker e
+adaptadores externos continuam descrições futuras.
+
 ### 4.3 PostgreSQL
 
+- implementar `EditorialNewsRepository` no pacote de infraestrutura
+  `packages/database`;
 - armazenar dados estruturados;
 - garantir unicidade e idempotência;
 - registrar versões de conteúdo;
 - registrar solicitações e ações de aprovação;
 - manter auditoria append-only;
-- sustentar jobs simples no início, se necessário.
+- proteger updates com `lock_version`;
+- executar a gravação do agregado em uma transação.
+
+O contrato de repositório pertence ao `content-engine` e retorna `Promise`. O
+adaptador PostgreSQL depende do domínio; o domínio não importa `pg`, SQL,
+variáveis de ambiente ou Docker. A implementação em memória continua disponível.
+Detalhes estão em [`POSTGRESQL.md`](POSTGRESQL.md).
 
 Redis só deverá ser introduzido com evidência de que locks, fila ou cache no
 PostgreSQL não atendem ao volume.
@@ -243,24 +254,27 @@ comandos, chamadas de ferramenta ou mudanças de configuração. Detalhes estão
 
 | Porta | Uso | Situação |
 | ---: | --- | --- |
-| 3000 | API local | MVP |
+| 3000 | API local | futura |
 | 3001 | painel web | futura |
-| 5432 | PostgreSQL | MVP local |
-| 5678 | n8n | MVP local |
+| 55432 | PostgreSQL | local, bind em `127.0.0.1` |
+| 5678 | n8n | futura |
 | 6379 | Redis | reservada, não necessária agora |
 | 11434 | Ollama | futura |
 
-Nenhuma dessas portas estava ocupada durante a inspeção. Em hospedagem, banco,
+A porta 5432 estava ocupada por outro container no momento da implementação, por
+isso este projeto adotou 55432 como padrão configurável. Em hospedagem, banco,
 n8n e serviços internos não devem ser expostos diretamente à internet.
 
 ## 12. Evolução
 
-1. fluxo local com fixtures;
-2. PostgreSQL e n8n locais;
-3. uma fonte real, um LLM e Telegram, conectados separadamente;
-4. operação hospedada e endurecimento;
-5. painel web e calendário editorial;
-6. publicação autorizada;
-7. integração com Lead Flow Studio;
-8. avaliação de Hermes e agentes especializados;
-9. empacotamento multiempresa, com isolamento de tenants.
+1. fluxo local com fixtures — concluído;
+2. PostgreSQL local — concluído;
+3. camada de serviço de aplicação sem HTTP;
+4. n8n local, somente quando autorizado;
+5. uma fonte real, um LLM e Telegram, conectados separadamente;
+6. operação hospedada e endurecimento;
+7. painel web e calendário editorial;
+8. publicação autorizada;
+9. integração com Lead Flow Studio;
+10. avaliação de Hermes e agentes especializados;
+11. empacotamento multiempresa, com isolamento de tenants.

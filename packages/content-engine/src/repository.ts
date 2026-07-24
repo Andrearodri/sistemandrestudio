@@ -1,37 +1,49 @@
-import { EntityNotFoundError } from "./errors.ts";
+import { ConcurrentUpdateError, EntityNotFoundError } from "./errors.ts";
 import type { AuditEvent, EditorialNews } from "./types.ts";
 
 export interface EditorialNewsRepository {
-  findById(id: string): EditorialNews | undefined;
-  getById(id: string): EditorialNews;
-  save(entity: EditorialNews): void;
-  listAuditEvents(entityId: string): readonly AuditEvent[];
+  findById(id: string): Promise<EditorialNews | undefined>;
+  getById(id: string): Promise<EditorialNews>;
+  save(entity: EditorialNews, expectedVersion?: number): Promise<void>;
+  listAuditEvents(entityId: string): Promise<readonly AuditEvent[]>;
 }
 
 export class InMemoryEditorialNewsRepository
   implements EditorialNewsRepository
 {
   readonly #entities = new Map<string, EditorialNews>();
+  readonly #versions = new Map<string, number>();
 
-  findById(id: string): EditorialNews | undefined {
+  async findById(id: string): Promise<EditorialNews | undefined> {
     const entity = this.#entities.get(id);
     return entity === undefined ? undefined : structuredClone(entity);
   }
 
-  getById(id: string): EditorialNews {
-    const entity = this.findById(id);
+  async getById(id: string): Promise<EditorialNews> {
+    const entity = await this.findById(id);
     if (entity === undefined) {
       throw new EntityNotFoundError(id);
     }
     return entity;
   }
 
-  save(entity: EditorialNews): void {
+  async save(
+    entity: EditorialNews,
+    expectedVersion = Math.max(0, entity.auditEvents.length - 1),
+  ): Promise<void> {
+    const currentVersion = this.#versions.get(entity.id);
+    if (
+      currentVersion !== undefined &&
+      currentVersion !== expectedVersion
+    ) {
+      throw new ConcurrentUpdateError(entity.id, expectedVersion);
+    }
+
     this.#entities.set(entity.id, structuredClone(entity));
+    this.#versions.set(entity.id, entity.auditEvents.length);
   }
 
-  listAuditEvents(entityId: string): readonly AuditEvent[] {
-    return this.getById(entityId).auditEvents;
+  async listAuditEvents(entityId: string): Promise<readonly AuditEvent[]> {
+    return (await this.getById(entityId)).auditEvents;
   }
 }
-

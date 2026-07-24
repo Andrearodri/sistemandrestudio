@@ -610,26 +610,27 @@ describe("editorial state machine", () => {
     }
   });
 
-  test("stores and recovers isolated snapshots in memory", () => {
+  test("stores and recovers isolated snapshots in memory", async () => {
     const repository = new InMemoryEditorialNewsRepository();
     const completed = runScenario(APPROVED_SCENARIO).entity;
-    repository.save(completed);
+    await repository.save(completed, 0);
 
-    const recovered = repository.getById(completed.id);
+    const recovered = await repository.getById(completed.id);
     assert.deepEqual(recovered, completed);
     assert.notEqual(recovered, completed);
     assert.deepEqual(
-      repository.listAuditEvents(completed.id),
+      await repository.listAuditEvents(completed.id),
       completed.auditEvents,
     );
   });
 
-  test("reports a stable error when an in-memory entity is missing", () => {
+  test("reports a stable error when an in-memory entity is missing", async () => {
     const repository = new InMemoryEditorialNewsRepository();
-    expectDomainError(
-      () => repository.getById("news-missing"),
-      "ENTITY_NOT_FOUND",
-      EntityNotFoundError,
+    await assert.rejects(
+      repository.getById("news-missing"),
+      (error: unknown) =>
+        error instanceof EntityNotFoundError &&
+        error.code === "ENTITY_NOT_FOUND",
     );
   });
 
@@ -647,6 +648,7 @@ describe("editorial state machine", () => {
       "INVALID_RELEVANCE_SCORE",
       "LOW_RELEVANCE",
       "INVALID_ACTOR",
+      "CONCURRENT_UPDATE",
     ]);
   });
 });

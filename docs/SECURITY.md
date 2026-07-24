@@ -15,8 +15,9 @@
 - permitir revogação e rotação de tokens;
 - tratar todo conteúdo externo como dado não confiável.
 
-O arquivo `.env.example` contém apenas nomes e valores não sensíveis. Arquivos
-`.env` reais estão ignorados pelo Git.
+O arquivo `.env.example` contém apenas nomes e valores não sensíveis.
+`.env.local` e `.env.test` reais estão ignorados pelo Git; somente seus exemplos
+com valores locais fictícios são versionados.
 
 ## 2. Segredos
 
@@ -113,7 +114,29 @@ público. A mudança para webhook exige revisão de rede e autorização.
 - acesso aos logs é restrito;
 - alertas não incluem tokens nem conteúdo integral.
 
-## 9. Dependências e cadeia de suprimentos
+## 9. PostgreSQL local
+
+- o Compose publica somente `127.0.0.1:55432`, nunca `0.0.0.0`;
+- desenvolvimento usa `sistemandrestudio` e testes usam
+  `sistemandrestudio_test`;
+- o reset destrutivo valida o sufixo `_test` antes de remover o schema;
+- o papel da aplicação não possui `SUPERUSER`, `CREATEDB`, `CREATEROLE` ou
+  `REPLICATION`;
+- o usuário privilegiado existe somente para bootstrap dentro do container;
+- queries de dados usam placeholders do driver, sem interpolar entradas;
+- nomes dinâmicos do bootstrap são validados e escapados pelo `format('%I')` do
+  próprio PostgreSQL;
+- migrations são versionadas, transacionais e verificadas por SHA-256;
+- alterações em migrations aplicadas são recusadas;
+- logs de configuração não exibem senha nem connection string;
+- `audit_events` aceita somente payload técnico controlado pelo código.
+
+O volume nomeado preserva os dados após `docker compose down`, mas não é backup.
+Antes de usar dados reais, definir RPO/RTO, automatizar cópias criptografadas,
+separar retenção e testar restauração. Em produção, migration deve usar um papel
+separado e temporário; o papel da aplicação deve perder permissão de DDL.
+
+## 10. Dependências e cadeia de suprimentos
 
 - fixar versões por lockfile;
 - revisar licença e manutenção antes de adotar pacote;
@@ -123,7 +146,7 @@ público. A mudança para webhook exige revisão de rede e autorização.
 - não instalar n8n ou Hermes globalmente;
 - atualizar componentes em ambiente de teste antes de produção.
 
-## 10. Ambientes, backup e recuperação
+## 11. Ambientes, backup e recuperação
 
 - usar bancos e credenciais separados por ambiente;
 - nunca copiar dados reais para desenvolvimento sem sanitização;
@@ -131,9 +154,13 @@ público. A mudança para webhook exige revisão de rede e autorização.
 - automatizar backups quando houver dados reais;
 - criptografar backups e testar restauração;
 - documentar como interromper workers sem perder estado;
-- manter migrations reversíveis quando possível.
+- manter migrations reversíveis quando possível;
+- executar migrations em desenvolvimento e teste antes de qualquer ambiente
+  futuro;
+- nunca alterar uma migration cujo checksum já foi registrado;
+- não usar `docker compose down -v` como rotina de desligamento.
 
-## 11. Revogação e incidentes
+## 12. Revogação e incidentes
 
 O runbook futuro deve permitir:
 
@@ -145,7 +172,7 @@ O runbook futuro deve permitir:
 6. restaurar estado consistente;
 7. comunicar impacto e registrar ações corretivas.
 
-## 12. Ações que exigem autorização
+## 13. Ações que exigem autorização
 
 - criar ou inserir qualquer credencial;
 - conectar Telegram, LLM, feeds, AWS ou redes sociais;
@@ -156,4 +183,3 @@ O runbook futuro deve permitir:
 - conceder permissões de publicação;
 - executar comandos destrutivos;
 - adicionar Hermes ou ampliar permissões de um agente.
-

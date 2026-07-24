@@ -12,7 +12,15 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --test tests/editorial-state-machine.test.ts",
     "test:watch": "node --test --watch tests/editorial-state-machine.test.ts",
-    "demo": "node apps/sistemandrestudio-api/src/demo.ts"
+    "test:integration": "node --env-file-if-exists=.env.test --test packages/database/test/postgres-editorial-news-repository.test.ts",
+    "demo": "node apps/sistemandrestudio-api/src/demo.ts",
+    "demo:postgres": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/demo-postgres.ts",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:status": "node --env-file-if-exists=.env.local packages/database/src/cli.ts status",
+    "db:migrate": "node --env-file-if-exists=.env.local packages/database/src/cli.ts migrate",
+    "db:migrate:test": "node --env-file-if-exists=.env.test packages/database/src/cli.ts migrate",
+    "db:reset:test": "node --env-file-if-exists=.env.test packages/database/src/cli.ts reset-test"
   },
   "engines": {
     "node": ">=24.0.0"

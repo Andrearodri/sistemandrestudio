@@ -1,16 +1,43 @@
-# Modelo de dados proposto — sistemandrestudio
+# Modelo de dados — sistemandrestudio
 
 ## 1. Status
 
-Este documento é uma proposta. Nenhuma tabela ou migration foi implementada.
-Campos, retenção e dados pessoais precisam de aprovação antes da criação do
-schema.
+O schema mínimo do agregado editorial foi implementado localmente. As entidades
+amplas descritas nas seções seguintes continuam sendo proposta futura; campos,
+retenção e dados pessoais ainda precisam de aprovação antes de dados reais.
 
 O PostgreSQL será a fonte de verdade. IDs podem usar UUID; datas devem ser
 armazenadas em UTC; entidades mutáveis devem ter `created_at`, `updated_at` e
 controle de versão. Tokens e chaves nunca pertencem a essas tabelas.
 
+## Modelo físico implementado
+
+| Tabela | Conteúdo atual |
+| --- | --- |
+| `editorial_news` | estado, fonte, título, URLs, relevância, verificação, ponteiros atuais e `lock_version` |
+| `draft_versions` | corpo e metadados das versões imutáveis |
+| `approval_requests` | submissão e estado de uma versão |
+| `approval_actions` | decisão humana com chave idempotente |
+| `audit_events` | transições append-only |
+| `processed_commands` | fingerprints e resultados idempotentes |
+| `schema_migrations` | migrations e checksums aplicados |
+
+O modelo foi ajustado ao agregado TypeScript existente. `approval_requests` é
+necessária porque cada decisão resolve uma solicitação específica. A relação
+futura entre `content_drafts` e `content_versions` foi reduzida a
+`draft_versions`, pois o agregado possui um único conjunto versionado por
+notícia. `base_content` permanece igual ao título normalizado até o domínio
+receber um campo próprio.
+
+As foreign keys usam `ON DELETE RESTRICT`; versões são únicas por notícia e
+número; chaves idempotentes são únicas; e uma constraint diferida impede
+`READY_FOR_PUBLICATION` sem aprovação persistida da versão atual. O SQL completo
+está em `packages/database/migrations`; a operação está documentada em
+[`POSTGRESQL.md`](POSTGRESQL.md).
+
 ## 2. Relações
+
+O diagrama abaixo representa a visão futura, não as tabelas já criadas.
 
 ```mermaid
 erDiagram
@@ -192,9 +219,10 @@ Esta tabela é **adiada** junto com o Hermes.
 - `correlation_id` indexado em todas as entidades operacionais;
 - check constraints para estados e níveis de confiança.
 
-## 5. Corte do MVP
+## 5. Corte futuro do MVP
 
-Implementar primeiro, após autorização:
+Depois do agregado mínimo já persistido, avaliar somente quando cada capacidade
+for autorizada:
 
 - `sources`;
 - `news_items`;
@@ -222,4 +250,3 @@ Os prazos acima são hipóteses, não decisões finais. Antes de dados reais:
 4. definir exclusão, anonimização e backup;
 5. limitar quem pode consultar exportações;
 6. documentar exceções para auditoria.
-

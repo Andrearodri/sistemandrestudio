@@ -9,6 +9,8 @@ coverage/
 .env
 .env.*
 !.env.example
+!.env.local.example
+!.env.test.example
 *.pem
 *.key
 
@@ -23,4 +25,3 @@ tmp/
 .DS_Store
 .idea/
 .vscode/
-

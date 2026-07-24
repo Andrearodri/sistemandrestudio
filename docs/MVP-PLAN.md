@@ -77,13 +77,15 @@ O MVP estará validado quando uma notícia puder atravessar todas as etapas com:
 
 ## 2. Diagnóstico do ambiente
 
-Inspeção realizada em 24 de julho de 2026, sem instalar ou iniciar componentes.
+Diagnóstico iniciado e atualizado em 24 de julho de 2026. A primeira inspeção
+foi somente leitura; nas etapas autorizadas seguintes foram criados o workspace
+e o PostgreSQL local.
 
 | Item | Encontrado |
 | --- | --- |
-| Pasta | Repositório sem arquivos de aplicação |
+| Pasta | Workspace npm/TypeScript com documentação e código local |
 | Git | `2.50.1 (Apple Git-155)` |
-| Branch | `main`, sem commits |
+| Branch | `main`, com commit-base do núcleo |
 | Node.js | `24.14.0` |
 | npm | `11.9.0` |
 | pnpm | `11.9.0`, fornecido pelo runtime local |
@@ -93,24 +95,23 @@ Inspeção realizada em 24 de julho de 2026, sem instalar ou iniciar componentes
 | Docker Compose | `v5.1.4` |
 | Sistema | macOS `26.5.2`, ARM64 |
 | Instruções locais | Nenhum `AGENTS.md` encontrado |
-| Arquivos anteriores | `README.md` e `docs/MVP-PLAN.md`, somente documentação |
-| Portas previstas | 3000, 3001, 5432, 5678, 6379 e 11434 livres |
-| Docker daemon | Não confirmado; sandbox negou acesso ao socket |
-| Credenciais/configuração | Nenhum `.env` real foi encontrado ou lido |
+| PostgreSQL | imagem oficial `postgres:17-alpine`, ARM64 |
+| Porta do projeto | `127.0.0.1:55432`; 5432 pertence a outro container |
+| Docker daemon | disponível; Compose e healthcheck validados |
+| Credenciais/configuração | somente valores fictícios locais, ignorados pelo Git |
 
 Conclusão: o ambiente já possui as ferramentas básicas para desenvolver e
-executar o MVP localmente. O cliente Docker funciona, mas a disponibilidade do
-daemon e de imagens não foi confirmada. Node.js 24 e ARM64 exigem validar a
-compatibilidade de cada dependência e imagem na etapa autorizada. O n8n em
-container reduz dependência da versão global do Node.js.
+executar o MVP localmente. O daemon, a imagem ARM64, o healthcheck e o bind local
+foram confirmados. Node.js 24 continua exigindo validar cada dependência nova. O
+n8n ainda não foi instalado nem iniciado.
 
 Possíveis conflitos a validar depois:
 
-- imagens Docker precisam oferecer suporte a ARM64;
 - cada biblioteca deve declarar compatibilidade com Node.js 24;
-- o daemon do Docker precisa estar acessível antes de usar Compose;
-- versões de imagens, schema e pacotes ainda não foram fixadas;
-- o repositório ainda não tem commit-base nem lockfile.
+- a porta configurável precisa continuar sem conflito com outros projetos;
+- o tag do PostgreSQL fixa a versão principal 17, mas recebe patches da série;
+- migrations aplicadas não podem ser editadas;
+- o volume local precisa de uma política real de backup antes de dados reais.
 
 ## 3. Decisões técnicas
 
@@ -315,14 +316,17 @@ scaffolding vazio.
 - Node.js e npm;
 - TypeScript;
 - tipos do Node.js;
-- runner e executor nativos do Node.js 24.
+- runner e executor nativos do Node.js 24;
+- PostgreSQL 17 em container;
+- `pg` para conexão e transações;
+- `@types/pg` para tipagem no desenvolvimento;
+- Docker Compose para o único serviço local.
 
 ### Necessárias para a próxima fatia autorizada
 
-- PostgreSQL;
-- cliente PostgreSQL e ferramenta de migrations;
-- Docker Compose para serviços locais;
-- n8n, quando a orquestração do fluxo for conectada.
+- uma camada de serviço de aplicação que coordene transição e persistência;
+- nenhum pacote adicional é necessário até existir uma integração autorizada;
+- n8n permanece futuro, quando a orquestração do fluxo for conectada.
 
 ### Necessárias para integração externa
 
@@ -339,9 +343,9 @@ scaffolding vazio.
 - Lead Flow Studio;
 - AWS EC2, domínio, TLS e observabilidade hospedada.
 
-Foram instalados localmente somente `typescript` e `@types/node` como
-dependências diretas de desenvolvimento. Nenhuma biblioteca de produção,
-framework HTTP ou integração foi adicionada.
+Além de `typescript` e `@types/node`, foram adicionados somente `pg` em produção
+e `@types/pg` no desenvolvimento. Não há ORM, framework HTTP ou biblioteca de
+integração.
 
 ## 9. Riscos e mitigação
 
@@ -386,12 +390,18 @@ sem rede. Consulte [`STATE-MACHINE.md`](STATE-MACHINE.md).
 
 ### Etapa 2 — PostgreSQL local
 
+**Status:** persistência local concluída em 24 de julho de 2026, na rodada
+autorizada como “Etapa 3 — Persistência local com PostgreSQL”.
+
 - criar Compose apenas para PostgreSQL;
 - criar migrations das tabelas iniciais;
 - implementar transações, repositórios e idempotência;
 - testar retry e duplicidade.
 
-**Saída:** uma notícia simulada percorre e persiste estados.
+**Saída obtida:** adaptador `PostgresEditorialNewsRepository`, migration SQL
+versionada, concorrência otimista, idempotência apoiada por constraints, banco
+de teste isolado, testes de integração e demo que fecha e reabre a conexão.
+Consulte [`POSTGRESQL.md`](POSTGRESQL.md).
 
 ### Etapa 3 — classificação e verificação com fixtures
 
@@ -512,6 +522,7 @@ Antes das integrações reais, será necessário decidir:
 
 ## 15. Recomendação imediata
 
-O núcleo local com dados fictícios foi concluído. Após nova autorização, a
-próxima fatia deve implementar somente o adaptador PostgreSQL e seus testes de
-integração locais. Integrações externas continuam fora do escopo.
+O núcleo e a persistência PostgreSQL local com dados fictícios foram concluídos.
+Após nova autorização, a próxima fatia deve implementar somente uma pequena
+camada de serviço que coordene uma transição e sua gravação, ainda sem HTTP.
+Integrações externas continuam fora do escopo e o MVP não está concluído.

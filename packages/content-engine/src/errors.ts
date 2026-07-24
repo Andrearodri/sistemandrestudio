@@ -12,6 +12,7 @@ export const DOMAIN_ERROR_CODES = [
   "INVALID_RELEVANCE_SCORE",
   "LOW_RELEVANCE",
   "INVALID_ACTOR",
+  "CONCURRENT_UPDATE",
 ] as const;
 
 export type DomainErrorCode = (typeof DOMAIN_ERROR_CODES)[number];
@@ -135,6 +136,16 @@ export class InvalidActorError extends DomainError {
       "INVALID_ACTOR",
       `This command requires actor ${expectedActorType}, received ${receivedActorType}.`,
       { expectedActorType, receivedActorType },
+    );
+  }
+}
+
+export class ConcurrentUpdateError extends DomainError {
+  constructor(entityId: string, expectedVersion: number) {
+    super(
+      "CONCURRENT_UPDATE",
+      `Editorial news ${entityId} changed after version ${expectedVersion}.`,
+      { entityId, expectedVersion: String(expectedVersion) },
     );
   }
 }

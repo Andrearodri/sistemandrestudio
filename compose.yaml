@@ -1,0 +1,28 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-sistemandrestudio}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-local-development-only}
+      POSTGRES_DB: ${POSTGRES_DB:-sistemandrestudio}
+      POSTGRES_TEST_DB: ${POSTGRES_TEST_DB:-sistemandrestudio_test}
+      POSTGRES_APP_USER: ${POSTGRES_APP_USER:-sistemandrestudio_app}
+      POSTGRES_APP_PASSWORD: ${POSTGRES_APP_PASSWORD:-local-app-only}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-55432}:5432"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+    volumes:
+      - sistemandrestudio_postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/docker/init:/docker-entrypoint-initdb.d:ro
+
+volumes:
+  sistemandrestudio_postgres_data:
+    name: sistemandrestudio_postgres_data

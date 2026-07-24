@@ -77,7 +77,9 @@ stateDiagram-v2
 - `validateEntity(entity)`: retorna violações estruturadas.
 - `createReceivedNews(input)`: cria o estado inicial com dados fornecidos.
 - `EditorialNewsRepository`: contrato substituível de persistência.
-- `InMemoryEditorialNewsRepository`: adaptador temporário para demo e testes.
+- `InMemoryEditorialNewsRepository`: adaptador para demo e testes unitários.
+- `PostgresEditorialNewsRepository`: adaptador assíncrono de infraestrutura,
+  implementado fora do domínio.
 
 `TransitionContext` fornece `eventId`, ator e horário. Isso impede dependência
 oculta de relógio ou gerador de UUID.
@@ -127,8 +129,8 @@ Um replay com a mesma chave e o mesmo fingerprint retorna a entidade sem
 alteração e não cria novo evento. Reuso da chave com tipo ou payload diferente
 gera `DUPLICATE_COMMAND`. IDs de eventos repetidos também são rejeitados.
 
-Essa proteção é local ao agregado. A persistência futura deverá criar constraint
-única para a chave e aplicar a transição em transação.
+No adaptador PostgreSQL, essa proteção também sobrevive ao processo por meio de
+constraint única e gravação transacional em `processed_commands`.
 
 ## 9. Versionamento
 
@@ -158,6 +160,7 @@ Os erros derivam de `DomainError` e possuem códigos estáveis:
 - `INVALID_RELEVANCE_SCORE`;
 - `LOW_RELEVANCE`;
 - `INVALID_ACTOR`.
+- `CONCURRENT_UPDATE`.
 
 ## 11. Fixtures e exemplos
 
@@ -186,20 +189,18 @@ npm run demo
 ## 12. Limitações atuais
 
 - o score e a verificação são entradas de fixture, não algoritmos completos;
-- o repositório perde os dados ao encerrar o processo;
-- não há controle transacional entre processos;
+- o adaptador em memória perde os dados ao encerrar o processo;
+- o adaptador PostgreSQL fornece transação e concorrência otimista;
 - não há autenticação real;
 - não há API HTTP;
-- não há banco, fila, timeout ou retry;
+- não há fila, timeout ou retry de orquestração;
 - não há RSS, n8n, Telegram ou LLM;
 - não há publicação.
 
 ## 13. Evolução futura
 
-1. implementar PostgreSQL por trás de `EditorialNewsRepository`;
-2. adicionar constraints de estado, versão e idempotência;
-3. mapear workflows n8n para comandos explícitos;
-4. mapear callbacks autenticados do Telegram para decisões humanas;
-5. ligar um adaptador de LLM somente ao comando `CreateDraft`;
-6. manter a máquina independente de todas essas integrações.
-
+1. adicionar uma camada de serviço que coordene transição e persistência;
+2. mapear workflows n8n para comandos explícitos;
+3. mapear callbacks autenticados do Telegram para decisões humanas;
+4. ligar um adaptador de LLM somente ao comando `CreateDraft`;
+5. manter a máquina independente de todas essas integrações.

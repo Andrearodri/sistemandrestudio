@@ -16,26 +16,25 @@ conteúdo.
 
 > [!IMPORTANT]
 > O projeto está em fase inicial. O núcleo local da máquina de estados está
-> implementado e testado, mas ainda não há banco, API HTTP ou integração externa.
+> implementado e o adaptador PostgreSQL local está disponível. Ainda não há API
+> HTTP, integração externa ou publicação.
 
 ## Estado atual
 
-O diagnóstico inicial foi concluído e o núcleo TypeScript local foi implementado:
+O núcleo TypeScript e a primeira persistência local foram implementados:
 
-- a pasta continha somente um repositório Git vazio;
-- o branch atual é `main` e ainda não há commits;
 - o workspace usa npm workspaces e TypeScript estrito;
-- a máquina editorial possui fixtures, testes e demonstração local;
-- somente `typescript` e `@types/node` foram adicionados como dependências
-  diretas de desenvolvimento;
+- a máquina editorial possui 29 testes unitários, fixtures e demonstração local;
+- o PostgreSQL possui migrations SQL, constraints, transações, idempotência
+  persistente, concorrência otimista e testes de integração;
+- as demonstrações em memória e persistente são comandos separados;
 - Git `2.50.1`, Node.js `24.14.0` e npm `11.9.0` estão disponíveis;
 - Docker `29.5.3` e Docker Compose `v5.1.4` estão disponíveis;
-- pnpm `11.9.0` está disponível pelo runtime local; Yarn não está instalado;
-- Python `3.9.6` está disponível, mas não é necessário para o MVP;
 - o ambiente é macOS `26.5.2` em arquitetura ARM64.
 
-Nenhum serviço foi iniciado, nenhuma conta externa foi acessada e nenhum deploy
-foi realizado. O núcleo não usa banco, Docker, n8n, Telegram, LLM, RSS ou rede.
+Somente o container PostgreSQL oficial local é necessário nesta etapa. Nenhuma
+conta externa foi acessada e nenhum deploy foi realizado. n8n, Telegram, LLM,
+RSS, Hermes e publicação continuam fora do código.
 
 ## Escopo do MVP
 
@@ -78,7 +77,7 @@ Aplicação Node.js/TypeScript
   └─ gateway do Telegram
        │
        ▼
-PostgreSQL (fonte de verdade e auditoria)
+PostgreSQL local (fonte de verdade e auditoria)
 ```
 
 Responsabilidades:
@@ -103,17 +102,18 @@ dados e as regras de segurança estão em:
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md);
 - [`docs/DATA-MODEL.md`](docs/DATA-MODEL.md);
 - [`docs/SECURITY.md`](docs/SECURITY.md);
-- [`docs/STATE-MACHINE.md`](docs/STATE-MACHINE.md).
+- [`docs/STATE-MACHINE.md`](docs/STATE-MACHINE.md);
+- [`docs/POSTGRESQL.md`](docs/POSTGRESQL.md).
 
 ## Tecnologias em avaliação
 
 | Tecnologia | Direção atual |
 | --- | --- |
 | TypeScript e Node.js | base recomendada da aplicação |
-| PostgreSQL | fonte de verdade recomendada |
+| PostgreSQL 17 | persistência local implementada |
 | n8n | orquestração previsível e limitada |
 | Telegram Bot | aprovação remota após autorização |
-| Docker Compose | ambiente local reprodutível, ainda não criado |
+| Docker Compose | um único serviço PostgreSQL local |
 | APIs de IA | adaptador substituível com limite de gasto |
 | Redis | dispensado até existir necessidade comprovada |
 | Hermes Agent | adiado para a fase 2 |
@@ -129,9 +129,11 @@ dados e as regras de segurança estão em:
 sistemandrestudio/
 ├── apps/
 │   └── sistemandrestudio-api/
-│       └── src/demo.ts
+│       └── src/
+│           ├── demo.ts
+│           └── demo-postgres.ts
 ├── packages/
-│   ├── database/              # manifesto; sem implementação
+│   ├── database/              # adapter, migrations e testes PostgreSQL
 │   ├── shared/src/            # ator, timestamp e idempotência
 │   └── content-engine/src/    # máquina, fixtures e repositório em memória
 ├── automations/
@@ -139,7 +141,8 @@ sistemandrestudio/
 ├── tests/editorial-state-machine.test.ts
 ├── docs/                      # planejamento e especificações
 ├── infrastructure/
-│   └── docker/                # somente documentação
+│   └── docker/init/           # bootstrap dos bancos e papel local
+├── compose.yaml
 ├── package.json
 ├── package-lock.json
 ├── tsconfig.base.json
@@ -149,7 +152,7 @@ sistemandrestudio/
 └── README.md
 ```
 
-`dashboard`, `agents/hermes`, `docker-compose.yml` e `LICENSE` continuam
+`dashboard`, `agents/hermes` e `LICENSE` continuam
 adiados. Não são necessários para validar o núcleo local.
 
 ## Princípios iniciais
@@ -163,7 +166,7 @@ adiados. Não são necessários para validar o núcleo local.
 - integrações começam com adaptadores simples e substituíveis;
 - publicação é uma capacidade posterior e separada da aprovação.
 
-## Núcleo local
+## Execução local
 
 Scripts disponíveis:
 
@@ -173,17 +176,28 @@ npm run test
 npm run build
 npm run test:watch
 npm run demo
+
+docker compose up -d
+npm run db:migrate
+npm run test:integration
+npm run demo:postgres
+docker compose down
 ```
 
 O comando `demo` executa uma notícia totalmente fictícia, imprime as transições,
-o histórico de auditoria e termina em `READY_FOR_PUBLICATION`. Ele não inicia
-servidor ou serviço.
+o histórico de auditoria e termina em `READY_FOR_PUBLICATION`. `demo:postgres`
+persiste cada etapa, fecha a conexão, abre outra e recupera o mesmo agregado.
+Nenhum dos dois inicia servidor HTTP ou integração externa.
+
+Use `.env.local.example` e `.env.test.example` como referência. Os arquivos
+locais reais ficam ignorados. O banco usa por padrão `127.0.0.1:55432`; detalhes
+e solução de problemas estão em [`docs/POSTGRESQL.md`](docs/POSTGRESQL.md).
 
 ## Próximo marco
 
-Após nova autorização, o próximo marco recomendado é implementar o adaptador
-PostgreSQL para a interface de repositório e validar as constraints com testes
-de integração locais. Esta etapa não foi iniciada.
+Após nova autorização, o próximo marco recomendado é criar uma camada de serviço
+de aplicação pequena que coordene uma transição e sua gravação, ainda sem HTTP
+ou integração externa. O MVP completo não está concluído.
 
 ## Execução futura
 
@@ -191,7 +205,7 @@ Quando as etapas correspondentes forem autorizadas, o ambiente local deverá
 usar:
 
 - npm workspaces e lockfile para a aplicação TypeScript;
-- Docker Compose para PostgreSQL e n8n, sem instalação global;
+- Docker Compose para serviços locais autorizados, sem instalação global;
 - fixtures para testes sem rede;
 - `.env` local não versionado;
 - adaptadores habilitados individualmente para fonte, LLM e Telegram.
