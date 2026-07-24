@@ -115,6 +115,13 @@ Possíveis conflitos a validar depois:
 
 ## 3. Decisões técnicas
 
+### Estado da Etapa 7
+
+A verificação factual foi implementada como política determinística anterior à
+geração. Resultado factual e transição editorial compartilham uma transação;
+replay, conflito idempotente e concorrência usam dados persistidos. Geração,
+LLM e aprovação remota permanecem etapas futuras.
+
 ### 3.1 Um monólito modular antes de agentes ou microserviços
 
 Uma aplicação Node.js/TypeScript deve concentrar API, worker e gateway do

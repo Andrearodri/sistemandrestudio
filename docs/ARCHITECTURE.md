@@ -1,5 +1,12 @@
 # Arquitetura — sistemandrestudio
 
+## Fronteira de verificação factual
+
+`VerificationWorkflowService` depende somente de uma porta de unidade de
+trabalho. A política pura pertence ao `content-engine`; o adaptador PostgreSQL
+implementa a porta e coordena a verificação com o agregado editorial na mesma
+transação. Essa fronteira evita SQL na aplicação e persistência parcial.
+
 ## 1. Objetivo arquitetural
 
 O primeiro MVP deve validar uma única trilha editorial auditável:

@@ -1,5 +1,13 @@
 # PostgreSQL local — sistemandrestudio
 
+## Unidade transacional da verificação
+
+O adaptador bloqueia `editorial_news`, valida `lock_version`, grava execução,
+claims, evidências e resultados, aplica a máquina de estados e persiste
+evento/comando antes do mesmo `COMMIT`. Qualquer exceção executa `ROLLBACK`.
+Replay é localizado por chave e fingerprint inclusive após reconexão. Testes
+continuam restritos ao banco terminado em `_test`.
+
 ## Objetivo
 
 Esta etapa adiciona persistência local ao agregado editorial sem levar

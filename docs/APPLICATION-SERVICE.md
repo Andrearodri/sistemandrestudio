@@ -1,5 +1,13 @@
 # Serviço de aplicação editorial — sistemandrestudio
 
+## VerificationWorkflowService
+
+O serviço recebe IDs, ator, horário, versão esperada, claims e evidências. Ele
+calcula o resultado puro, cria fingerprint canônico e entrega uma única
+operação à porta `VerificationUnitOfWork`. Não importa `pg`, SQL, Docker, HTTP
+ou variáveis de ambiente. A resposta expõe estados, status, decisão, confiança,
+claims, warnings, bloqueios e replay.
+
 ## Responsabilidade
 
 `EditorialWorkflowService` é a camada de coordenação entre futuros adaptadores

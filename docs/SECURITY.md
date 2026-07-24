@@ -210,3 +210,12 @@ permanece texto não confiável e não é interpretado pelo parser XML. HTML do
 feed é tratado como dado, tem tamanho limitado e nunca é executado. Logs
 registram somente códigos, metadados técnicos e contagens. Nunca inclua `.env`,
 volumes PostgreSQL, tokens ou URLs completas de conexão no Git.
+
+## 15. Evidências factuais
+
+Evidência exige HTTPS, fonte permitida, claim existente, trecho de até 500
+caracteres e fatos estruturados limitados. Hosts locais, privados e link-local
+são recusados. A política completa é validada por versão e conteúdo; status e
+decisão incompatíveis são bloqueados também por constraints. Texto externo,
+incluindo instruções, nunca é executado. A transação integrada e os testes de
+rollback impedem resultado ou evento editorial parcial.

@@ -4,3 +4,4 @@ export * from "./relevance/index.ts";
 export * from "./repository.ts";
 export * from "./state-machine.ts";
 export * from "./types.ts";
+export * from "./verification/index.ts";

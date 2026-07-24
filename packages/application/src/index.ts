@@ -5,4 +5,5 @@ export * from "./fixtures.ts";
 export * from "./ports.ts";
 export * from "./relevance-workflow.ts";
 export * from "./official-source-radar-service.ts";
+export * from "./verification-workflow-service.ts";
 export * from "./result.ts";

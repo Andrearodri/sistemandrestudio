@@ -119,7 +119,7 @@ export class PostgresEditorialNewsRepository
       await client.query(
         "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY",
       );
-      return loadAggregate(client, id);
+      return loadEditorialNewsAggregate(client, id);
     });
   }
 
@@ -135,39 +135,9 @@ export class PostgresEditorialNewsRepository
     entity: EditorialNews,
     expectedVersion = Math.max(0, entity.auditEvents.length - 1),
   ): Promise<void> {
-    const issue = validateEntity(entity)[0];
-    if (issue !== undefined) {
-      throw new RequiredFieldMissingError(issue.field);
-    }
-
     try {
       await withTransaction(this.pool, async (client) => {
-        const current = await client.query<
-          QueryResultRow & { readonly lock_version: number }
-        >(
-          `SELECT lock_version
-           FROM editorial_news
-           WHERE id = $1
-           FOR UPDATE`,
-          [entity.id],
-        );
-
-        if (current.rowCount === 0) {
-          if (expectedVersion !== 0) {
-            throw new ConcurrentUpdateError(entity.id, expectedVersion);
-          }
-          await insertInitialNews(client, entity);
-        } else if (current.rows[0]?.lock_version !== expectedVersion) {
-          throw new ConcurrentUpdateError(entity.id, expectedVersion);
-        }
-
-        await persistRelevanceResult(client, entity);
-        await persistDraftVersions(client, entity);
-        await persistApprovalRequests(client, entity);
-        await persistApprovalActions(client, entity);
-        await persistProcessedCommands(client, entity);
-        await persistAuditEvents(client, entity);
-        await updateNews(client, entity, expectedVersion);
+        await saveEditorialNewsAggregate(client, entity, expectedVersion);
       });
     } catch (error) {
       throw mapPersistenceError(error);
@@ -205,6 +175,44 @@ export class PostgresEditorialNewsRepository
           result: row.result,
         };
   }
+}
+
+export async function saveEditorialNewsAggregate(
+  client: PoolClient,
+  entity: EditorialNews,
+  expectedVersion: number,
+): Promise<void> {
+  const issue = validateEntity(entity)[0];
+  if (issue !== undefined) {
+    throw new RequiredFieldMissingError(issue.field);
+  }
+
+  const current = await client.query<
+    QueryResultRow & { readonly lock_version: number }
+  >(
+    `SELECT lock_version
+     FROM editorial_news
+     WHERE id = $1
+     FOR UPDATE`,
+    [entity.id],
+  );
+
+  if (current.rowCount === 0) {
+    if (expectedVersion !== 0) {
+      throw new ConcurrentUpdateError(entity.id, expectedVersion);
+    }
+    await insertInitialNews(client, entity);
+  } else if (current.rows[0]?.lock_version !== expectedVersion) {
+    throw new ConcurrentUpdateError(entity.id, expectedVersion);
+  }
+
+  await persistRelevanceResult(client, entity);
+  await persistDraftVersions(client, entity);
+  await persistApprovalRequests(client, entity);
+  await persistApprovalActions(client, entity);
+  await persistProcessedCommands(client, entity);
+  await persistAuditEvents(client, entity);
+  await updateNews(client, entity, expectedVersion);
 }
 
 async function insertInitialNews(
@@ -525,7 +533,7 @@ async function persistAuditEvents(
   }
 }
 
-async function loadAggregate(
+export async function loadEditorialNewsAggregate(
   client: PoolClient,
   id: string,
 ): Promise<EditorialNews | undefined> {

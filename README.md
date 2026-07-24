@@ -2,6 +2,12 @@
 
 O MVP inclui um radar de fontes oficiais em modo somente leitura: feed público → normalização → deduplicação → relevância → persistência → relatório local. Veja [as fontes oficiais](docs/OFFICIAL-SOURCES.md) e a [operação do radar](docs/RADAR-OPERATIONS.md). Não há publicação, integração Telegram, LLM, n8n ou acesso a contas nesta etapa.
 
+A verificação factual determinística registra claims, evidências e resultados
+explicáveis antes de qualquer geração. Somente `CONFIRMED` avança para
+`VERIFIED`; confirmação parcial aguarda revisão, e os demais resultados
+bloqueiam. Veja
+[`docs/FACTUAL-VERIFICATION.md`](docs/FACTUAL-VERIFICATION.md).
+
 A estabilização pode ser verificada com `npm run radar:fixtures` e, com o
 PostgreSQL local ativo, `npm run radar:validate`. O segundo comando usa somente
 o banco terminado em `_test`, limita os itens e comprova duas rodadas
@@ -212,6 +218,9 @@ npm run demo:application
 npm run demo:application:postgres
 npm run demo:relevance
 npm run demo:relevance:postgres
+npm run demo:verification
+npm run demo:verification:postgres
+npm run verify:official
 docker compose down
 ```
 
@@ -228,9 +237,9 @@ e solução de problemas estão em [`docs/POSTGRESQL.md`](docs/POSTGRESQL.md).
 
 ## Próximo marco
 
-Após nova autorização, o próximo marco pequeno recomendado é implementar
-somente uma política determinística de verificação com evidências fictícias.
-Fonte real, LLM e integrações externas continuam adiados. O MVP completo não
+A Etapa 7 prepara a fronteira de verificação para revisão. Qualquer geração de
+conteúdo continua dependente de nova autorização e deverá aceitar apenas itens
+`VERIFIED`. LLM e integrações externas continuam adiados. O MVP completo não
 está concluído.
 
 ## Execução futura

@@ -10,6 +10,12 @@ Deduplicação exata por URL canônica, identificador externo ou hash gera regis
 
 ## Validação limpa e idempotência
 
+Itens já coletados podem ser inspecionados sem nova rede por
+`npm run verify:official`. O comando lê no máximo cinco itens, exige fonte e
+host do catálogo e transforma apenas metadados em claims. Ele não considera o
+título prova da própria claim; sem evidência suficiente, informa
+`INSUFFICIENT_EVIDENCE` e não grava nem força confirmação.
+
 `npm run radar:validate` exige a configuração do banco terminado em `_test`.
 O comando reseta somente esse banco, coleta no máximo três itens de cada fonte
 habilitada e mantém em memória o snapshot recebido. Em seguida executa duas

@@ -9,6 +9,32 @@ export async function removePreviousEditorialDemo(
 ): Promise<void> {
   await withTransaction(pool, async (client) => {
     await client.query(
+      `DELETE FROM verification_claim_results
+       WHERE result_id IN (
+         SELECT id FROM verification_results WHERE news_id = $1
+       )`,
+      [newsId],
+    );
+    await client.query(
+      `DELETE FROM verification_results WHERE news_id = $1`,
+      [newsId],
+    );
+    await client.query(
+      `DELETE FROM verification_evidence
+       WHERE claim_id IN (
+         SELECT id FROM verification_claims WHERE news_id = $1
+       )`,
+      [newsId],
+    );
+    await client.query(
+      `DELETE FROM verification_claims WHERE news_id = $1`,
+      [newsId],
+    );
+    await client.query(
+      `DELETE FROM verification_runs WHERE news_id = $1`,
+      [newsId],
+    );
+    await client.query(
       "UPDATE editorial_news SET state = 'RECEIVED', current_draft_version_id = NULL, current_approval_request_id = NULL WHERE id = $1",
       [newsId],
     );

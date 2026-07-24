@@ -1,5 +1,13 @@
 # Modelo de dados — sistemandrestudio
 
+## Verificação factual
+
+`verification_runs` identifica política, versão, fingerprint, versão esperada e
+estados anterior/final. Claims e evidências preservam ordem por execução;
+resultados geral e por claim guardam a explicação completa. Foreign keys,
+checks de status/decisão/confiança, limites e unicidade sustentam o modelo. A
+migration 005 complementa a 004 sem reescrever seu checksum já aplicado.
+
 ## 1. Status
 
 O schema mínimo do agregado editorial foi implementado localmente. As entidades

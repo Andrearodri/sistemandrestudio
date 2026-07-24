@@ -30,7 +30,10 @@
     "db:reset:test": "node --env-file-if-exists=.env.test packages/database/src/cli.ts reset-test",
     "radar:fixtures": "node --test packages/sources/test/sources.test.ts",
     "radar:validate": "node --env-file-if-exists=.env.test apps/sistemandrestudio-api/src/radar-validate.ts",
-    "radar:official": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/radar-official.ts"
+    "radar:official": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/radar-official.ts",
+    "demo:verification": "node apps/sistemandrestudio-api/src/demo-verification.ts",
+    "demo:verification:postgres": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/demo-verification-postgres.ts",
+    "verify:official": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/verify-official.ts"
   },
   "engines": {
     "node": ">=24.0.0"
