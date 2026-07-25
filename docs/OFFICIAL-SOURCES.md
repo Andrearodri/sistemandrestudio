@@ -71,3 +71,12 @@ Para adicionar uma fonte, registre o feed oficial, organização, justificativa,
 hosts permitidos, tópicos e limites no catálogo; acrescente fixture local e
 testes antes de habilitá-la. Para interromper uma fonte, altere `enabled` para
 `false`; o radar a ignora sem remover o histórico persistido.
+
+## Política de páginas oficiais
+
+Cada fonte também declara, em versão própria, hosts de entrada, redirects,
+destinos oficiais adicionais, caminhos bloqueados/permitidos, máximo de páginas
+e profundidade. Essa lista serve somente para enriquecer itens já coletados;
+ela não transforma o sistema em crawler e não aceita URL fornecida pelo usuário.
+Consulte
+[`OFFICIAL-EVIDENCE-ACQUISITION.md`](OFFICIAL-EVIDENCE-ACQUISITION.md).

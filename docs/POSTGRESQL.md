@@ -219,3 +219,11 @@ Integrações externas devem continuar adiadas.
 # PostgreSQL
 
 A migração 003 é aditiva: não altera migrações nem tabelas editoriais existentes. O adaptador do radar grava somente no banco configurado localmente; o volume do Compose deve ser preservado com `docker compose down`, nunca `down -v`.
+
+## Migration 006
+
+`006_official_evidence_acquisition.sql` é aditiva e mantém as migrations 001–005
+imutáveis. A aquisição faz rede antes de abrir a transação. O commit transacional
+confere `expectedVersion`, persiste runs, snapshot mínimo, metadados, candidatos,
+verificação factual e evento editorial; qualquer conflito provoca rollback. O
+reset de integração continua restrito a banco com sufixo `_test`.

@@ -50,3 +50,18 @@ distintos e apenas influencia a relevância.
   sem autorização.
 - falha de DNS no `npm audit`: registre a indisponibilidade e execute
   `npm ls --all`; não declare zero vulnerabilidades.
+
+## Operação de evidências
+
+`npm run evidence:official` seleciona no máximo cinco itens existentes e usa
+somente suas URLs oficiais. O relatório por item expõe contagens, estados e
+códigos controlados, sem despejar corpos ou segredos. Bloqueios de SSRF,
+JavaScript obrigatório ou prova insuficiente não devem ser contornados. As
+demos `demo:evidence*` são a validação reproduzível com fixtures.
+
+A seleção operacional exige fonte habilitada, URL HTTPS no host de entrada e
+ausência de marcadores sintéticos nos metadados existentes. Ordena por data de
+publicação/coleta mais recente e desempata por fonte/ID. `REPLAY` significa hash
+e políticas inalterados; `NEW_ACQUISITION_VERSION` significa novo conteúdo ou
+política, com histórico preservado. Duas execuções imediatas devem reportar
+zero novos snapshots, evidências, resultados e eventos na segunda.

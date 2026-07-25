@@ -5,3 +5,4 @@ export * from "./migrations.ts";
 export * from "./postgres-editorial-news-repository.ts";
 export * from "./postgres-source-radar-repository.ts";
 export * from "./postgres-verification-repository.ts";
+export * from "./postgres-evidence-acquisition-repository.ts";

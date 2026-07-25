@@ -29,6 +29,10 @@ export interface VerificationWorkflowInput {
     readonly id: string;
     readonly allowedHosts: readonly string[];
   }[] | undefined;
+  readonly evaluationMode?:
+    | "EDITORIAL_TRANSITION"
+    | "HISTORICAL_REEVALUATION"
+    | undefined;
 }
 
 export interface VerificationAtomicOperation {
@@ -86,22 +90,9 @@ export class VerificationWorkflowService {
   async evaluate(
     input: VerificationWorkflowInput,
   ): Promise<VerificationWorkflowResult> {
-    validateWorkflowInput(input);
-    const result = evaluateVerification({
-      verificationId: input.verificationId,
-      newsId: input.newsId,
-      claims: input.claims,
-      evidence: input.evidence,
-      allowedSourceIds: input.allowedSourceIds,
-      allowedSources: input.allowedSources,
-      policy: ANDRE_STUDIO_VERIFICATION_POLICY_V1,
-      evaluatedAt: input.occurredAt,
-    });
-    const persisted = await this.#unitOfWork.executeAtomic({
-      input,
-      fingerprint: verificationFingerprint(input),
-      result,
-    });
+    const persisted = await this.#unitOfWork.executeAtomic(
+      prepareVerificationOperation(input),
+    );
 
     return {
       verificationId: persisted.result.verificationId,
@@ -121,6 +112,26 @@ export class VerificationWorkflowService {
   }
 }
 
+export function prepareVerificationOperation(
+  input: VerificationWorkflowInput,
+): VerificationAtomicOperation {
+  validateWorkflowInput(input);
+  return {
+    input,
+    fingerprint: verificationFingerprint(input),
+    result: evaluateVerification({
+      verificationId: input.verificationId,
+      newsId: input.newsId,
+      claims: input.claims,
+      evidence: input.evidence,
+      allowedSourceIds: input.allowedSourceIds,
+      allowedSources: input.allowedSources,
+      policy: ANDRE_STUDIO_VERIFICATION_POLICY_V1,
+      evaluatedAt: input.occurredAt,
+    }),
+  };
+}
+
 export function verificationFingerprint(
   input: VerificationWorkflowInput,
 ): string {
@@ -131,7 +142,9 @@ export function verificationFingerprint(
     occurredAt: input.occurredAt,
     actor: input.actor,
     claims: input.claims,
-    evidence: input.evidence,
+    evidence: input.evidence.map(({ retrievedAt: _retrievedAt, ...item }) =>
+      item
+    ),
     allowedSourceIds: input.allowedSourceIds === undefined
       ? undefined
       : [...input.allowedSourceIds].sort(),
@@ -145,6 +158,7 @@ export function verificationFingerprint(
         .sort((left, right) => left.id.localeCompare(right.id)),
     policyId: ANDRE_STUDIO_VERIFICATION_POLICY_V1.id,
     policyVersion: ANDRE_STUDIO_VERIFICATION_POLICY_V1.version,
+    evaluationMode: input.evaluationMode ?? "EDITORIAL_TRANSITION",
   };
   return createHash("sha256")
     .update(stableJson(functionalInput))

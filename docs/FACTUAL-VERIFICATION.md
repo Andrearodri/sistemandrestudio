@@ -119,3 +119,12 @@ de páginas que não foi coletado como evidência estruturada. Não há geraçã
 Telegram, n8n, API HTTP nem publicação. Um LLM futuro poderá sugerir claims ou
 resumir evidências, mas sua saída deverá ser validada como dado e nunca poderá
 alterar a política, liberar conteúdo bloqueado ou decidir publicação.
+
+## Evidência adquirida de páginas oficiais
+
+A política factual pode agora receber candidatos produzidos
+deterministicamente a partir da URL oficial persistida pelo radar. A aquisição
+não muda os thresholds da verificação: conteúdo promocional, associação fraca
+ou página inacessível continuam `INSUFFICIENT_EVIDENCE`. Contradição só é
+marcada quando explícita. Arquitetura, limites e replay estão em
+[`OFFICIAL-EVIDENCE-ACQUISITION.md`](OFFICIAL-EVIDENCE-ACQUISITION.md).

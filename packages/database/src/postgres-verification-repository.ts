@@ -62,124 +62,9 @@ export class PostgresVerificationRepository
   async executeAtomic(
     operation: VerificationAtomicOperation,
   ): Promise<VerificationAtomicResult> {
-    return withTransaction(this.#pool, async (client) => {
-      const existing = await findRunByKey(
-        client,
-        operation.input.idempotencyKey,
-        true,
-      );
-      if (existing !== undefined) {
-        if (
-          existing.news_id !== operation.input.newsId ||
-          existing.command_fingerprint !== operation.fingerprint
-        ) {
-          throw new VerificationWorkflowError(
-            "VERIFICATION_IDEMPOTENCY_CONFLICT",
-            "The verification key is associated with different content.",
-          );
-        }
-        const replay = await loadCompleteByRun(client, existing);
-        return {
-          previousState: replay.previousState,
-          currentState: replay.currentState,
-          replayed: true,
-          result: replay.result,
-        };
-      }
-
-      const locked = await client.query<
-        QueryResultRow & {
-          readonly state: string;
-          readonly lock_version: number;
-        }
-      >(
-        `SELECT state, lock_version
-         FROM editorial_news
-         WHERE id = $1
-         FOR UPDATE`,
-        [operation.input.newsId],
-      );
-      const row = locked.rows[0];
-      if (row === undefined) {
-        throw new VerificationWorkflowError(
-          "VERIFICATION_NEWS_NOT_FOUND",
-          "The editorial news item does not exist.",
-        );
-      }
-      if (row.lock_version !== operation.input.expectedVersion) {
-        throw new VerificationWorkflowError(
-          "VERIFICATION_CONCURRENCY_CONFLICT",
-          "The editorial news version changed before verification.",
-        );
-      }
-      if (row.state !== "PENDING_VERIFICATION") {
-        throw new VerificationWorkflowError(
-          "VERIFICATION_INVALID_EDITORIAL_STATE",
-          "Only news pending verification can be fact-checked.",
-        );
-      }
-
-      const current = await loadEditorialNewsAggregate(
-        client,
-        operation.input.newsId,
-      );
-      if (current === undefined) {
-        throw new VerificationWorkflowError(
-          "VERIFICATION_NEWS_NOT_FOUND",
-          "The editorial news item disappeared during verification.",
-        );
-      }
-
-      await insertRun(client, operation, current.state);
-      await insertClaims(client, operation);
-      await insertEvidence(client, operation);
-      await insertResult(client, operation);
-
-      let currentState = current.state;
-      if (operation.result.status !== "PARTIALLY_CONFIRMED") {
-        const approved = operation.result.status === "CONFIRMED";
-        const command = {
-          type: approved
-            ? "ApproveVerification" as const
-            : "RejectVerification" as const,
-          verification: toEditorialVerification(operation.result),
-          idempotencyKey: operation.input.idempotencyKey,
-          reason: operation.result.blockingReasons[0]?.code ??
-            operation.result.status,
-        };
-        const transitioned = transition(current, command, {
-          eventId: operation.input.commandId,
-          actor: operation.input.actor,
-          occurredAt: operation.input.occurredAt,
-        });
-        await saveEditorialNewsAggregate(
-          client,
-          transitioned.entity,
-          operation.input.expectedVersion,
-        );
-        currentState = transitioned.entity.state;
-      }
-
-      await client.query(
-        `UPDATE verification_runs
-         SET status = 'SUCCEEDED',
-             finished_at = $2,
-             current_state = $3
-         WHERE id = $1`,
-        [
-          operation.input.verificationId,
-          operation.input.occurredAt,
-          currentState,
-        ],
-      );
-
-      return {
-        previousState: current.state,
-        currentState,
-        replayed: false,
-        result: operation.result,
-      };
-    });
+    return withTransaction(this.#pool, (client) =>
+      executeVerificationAtomic(client, operation)
+    );
   }
 
   async findByIdempotency(
@@ -205,6 +90,133 @@ export class PostgresVerificationRepository
       return run === undefined ? undefined : loadCompleteByRun(client, run);
     });
   }
+}
+
+export async function executeVerificationAtomic(
+  client: PoolClient,
+  operation: VerificationAtomicOperation,
+): Promise<VerificationAtomicResult> {
+  const existing = await findRunByKey(
+    client,
+    operation.input.idempotencyKey,
+    true,
+  );
+  if (existing !== undefined) {
+    if (
+      existing.news_id !== operation.input.newsId ||
+      existing.command_fingerprint !== operation.fingerprint
+    ) {
+      throw new VerificationWorkflowError(
+        "VERIFICATION_IDEMPOTENCY_CONFLICT",
+        "The verification key is associated with different content.",
+      );
+    }
+    const replay = await loadCompleteByRun(client, existing);
+    return {
+      previousState: replay.previousState,
+      currentState: replay.currentState,
+      replayed: true,
+      result: replay.result,
+    };
+  }
+
+  const locked = await client.query<
+    QueryResultRow & {
+      readonly state: string;
+      readonly lock_version: number;
+    }
+  >(
+    `SELECT state, lock_version
+     FROM editorial_news
+     WHERE id = $1
+     FOR UPDATE`,
+    [operation.input.newsId],
+  );
+  const row = locked.rows[0];
+  if (row === undefined) {
+    throw new VerificationWorkflowError(
+      "VERIFICATION_NEWS_NOT_FOUND",
+      "The editorial news item does not exist.",
+    );
+  }
+  if (row.lock_version !== operation.input.expectedVersion) {
+    throw new VerificationWorkflowError(
+      "VERIFICATION_CONCURRENCY_CONFLICT",
+      "The editorial news version changed before verification.",
+    );
+  }
+  const historicalReevaluation =
+    operation.input.evaluationMode === "HISTORICAL_REEVALUATION";
+  if (row.state !== "PENDING_VERIFICATION" && !historicalReevaluation) {
+    throw new VerificationWorkflowError(
+      "VERIFICATION_INVALID_EDITORIAL_STATE",
+      "Only news pending verification can be fact-checked.",
+    );
+  }
+
+  const current = await loadEditorialNewsAggregate(
+    client,
+    operation.input.newsId,
+  );
+  if (current === undefined) {
+    throw new VerificationWorkflowError(
+      "VERIFICATION_NEWS_NOT_FOUND",
+      "The editorial news item disappeared during verification.",
+    );
+  }
+
+  await insertRun(client, operation, current.state);
+  await insertClaims(client, operation);
+  await insertEvidence(client, operation);
+  await insertResult(client, operation);
+
+  let currentState = current.state;
+  if (
+    current.state === "PENDING_VERIFICATION" &&
+    operation.result.status !== "PARTIALLY_CONFIRMED"
+  ) {
+    const approved = operation.result.status === "CONFIRMED";
+    const command = {
+      type: approved
+        ? "ApproveVerification" as const
+        : "RejectVerification" as const,
+      verification: toEditorialVerification(operation.result),
+      idempotencyKey: operation.input.idempotencyKey,
+      reason: operation.result.blockingReasons[0]?.code ??
+        operation.result.status,
+    };
+    const transitioned = transition(current, command, {
+      eventId: operation.input.commandId,
+      actor: operation.input.actor,
+      occurredAt: operation.input.occurredAt,
+    });
+    await saveEditorialNewsAggregate(
+      client,
+      transitioned.entity,
+      operation.input.expectedVersion,
+    );
+    currentState = transitioned.entity.state;
+  }
+
+  await client.query(
+    `UPDATE verification_runs
+     SET status = 'SUCCEEDED',
+         finished_at = $2,
+         current_state = $3
+     WHERE id = $1`,
+    [
+      operation.input.verificationId,
+      operation.input.occurredAt,
+      currentState,
+    ],
+  );
+
+  return {
+    previousState: current.state,
+    currentState,
+    replayed: false,
+    result: operation.result,
+  };
 }
 
 async function insertRun(

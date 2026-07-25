@@ -219,3 +219,27 @@ são recusados. A política completa é validada por versão e conteúdo; status
 decisão incompatíveis são bloqueados também por constraints. Texto externo,
 incluindo instruções, nunca é executado. A transação integrada e os testes de
 rollback impedem resultado ou evento editorial parcial.
+
+## 16. Aquisição em páginas oficiais
+
+A Etapa 8 parte somente de URLs canônicas persistidas pelo radar e opera em
+`READ_ONLY_EXTERNAL`. Hosts, redirects e caminhos vêm de allow-list versionada.
+DNS e todos os IPs resolvidos são validados; HTTPS, porta 443, GET, content type,
+bytes, redirects, tentativas, páginas e tempo são limitados. HTML e JSON-LD são
+dados não confiáveis, scripts não executam e HTML completo não é persistido.
+
+O risco residual é a nova resolução feita pela implementação de `fetch` depois
+da validação DNS. Egress de produção e um dispatcher com endereço fixado devem
+fechar essa lacuna futuramente. Nenhuma proteção deve ser relaxada para obter
+uma classificação melhor.
+
+A identidade operacional não aceita IDs, chaves ou política fornecidos pela
+página. Ela é calculada pela aplicação com item persistido, URL validada, hashes
+do conteúdo mínimo e versões internas de política. Timestamp de recuperação,
+headers e conteúdo integral ficam fora do hash. A chave externa é preservada
+separadamente para auditoria; o modo explícito mantém conflito obrigatório
+quando a chave é reutilizada com conteúdo incompatível.
+
+Locks transacionais por item e identidade impedem duplicação e persistência
+parcial em concorrência. Isso não altera HTTPS, GET, allow-list, DNS/IP,
+redirects, limites, timeout ou parsing estático.

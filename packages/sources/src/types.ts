@@ -1,6 +1,18 @@
 export type SourceFeedFormat = "RSS" | "ATOM" | "AUTO";
 export type SourceExecutionMode = "READ_ONLY_EXTERNAL" | "FIXTURES";
 
+export interface OfficialPagePolicyDefinition {
+  readonly version: string;
+  readonly entryHosts: readonly string[];
+  readonly redirectHosts: readonly string[];
+  readonly additionalOfficialHosts: readonly string[];
+  readonly allowedPathPrefixes: readonly string[];
+  readonly blockedPathPrefixes: readonly string[];
+  readonly maxPagesPerItem: number;
+  readonly maxRelatedPages: number;
+  readonly maxDepth: number;
+}
+
 export interface SourceDefinition {
   readonly id: string;
   readonly name: string;
@@ -13,6 +25,7 @@ export interface SourceDefinition {
   readonly minimumIntervalMinutes: number;
   readonly retentionDays: number;
   readonly allowedHosts: readonly string[];
+  readonly officialPagePolicy: OfficialPagePolicyDefinition;
   readonly notes: string;
 }
 

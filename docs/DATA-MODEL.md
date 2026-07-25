@@ -270,3 +270,11 @@ Os prazos acima são hipóteses, não decisões finais. Antes de dados reais:
 # Modelo de dados
 
 Além das entidades editoriais, a migração incremental `003_official_source_radar.sql` adiciona `source_definitions`, `source_fetch_runs`, `collected_source_items` e `source_item_duplicates`. Esses registros separam a evidência da coleta da decisão editorial, preservando URL canônica, hash, origem, execução e duplicidade sem guardar respostas brutas do feed.
+
+## Aquisição de páginas oficiais
+
+A migration incremental `006_official_evidence_acquisition.sql` adiciona runs
+de aquisição/fetch, snapshots mínimos, metadados selecionados e candidatos de
+evidência. HTML completo não é armazenado. Hashes e versões de política
+distinguem replay de conteúdo alterado; foreign keys ligam item, notícia, claim,
+evidência e página, preservando o histórico.

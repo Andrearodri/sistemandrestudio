@@ -565,3 +565,11 @@ determinística de relevância com dados fictícios foram concluídos. Após nov
 autorização, a próxima fatia pequena deve implementar somente uma política
 determinística de verificação com evidências fictícias, sem fonte real ou LLM.
 Integrações externas continuam fora do escopo e o MVP não está concluído.
+
+### Atualização após a Etapa 8
+
+A verificação determinística e a aquisição controlada em páginas oficiais foram
+implementadas. A aquisição parte de itens do radar, usa allow-list e persiste
+somente conteúdo mínimo. O próximo incremento depende de nova autorização; LLM,
+geração, Telegram, n8n, publicação e deploy continuam fora do escopo. O MVP
+permanece incompleto.

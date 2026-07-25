@@ -1,0 +1,30 @@
+export const EVIDENCE_ACQUISITION_ERROR_CODES = [
+  "INVALID_EVIDENCE_ACQUISITION_INPUT",
+  "OFFICIAL_PAGE_NOT_ALLOWED",
+  "OFFICIAL_PAGE_PRIVATE_ADDRESS",
+  "OFFICIAL_PAGE_REDIRECT_NOT_ALLOWED",
+  "OFFICIAL_PAGE_TIMEOUT",
+  "OFFICIAL_PAGE_TOO_LARGE",
+  "OFFICIAL_PAGE_CONTENT_TYPE_NOT_ALLOWED",
+  "OFFICIAL_PAGE_PARSE_FAILED",
+  "OFFICIAL_PAGE_JAVASCRIPT_REQUIRED",
+  "OFFICIAL_RELATED_LINK_NOT_ALLOWED",
+  "EVIDENCE_EXTRACTION_FAILED",
+  "EVIDENCE_ASSOCIATION_FAILED",
+  "EVIDENCE_ACQUISITION_IDEMPOTENCY_CONFLICT",
+  "EVIDENCE_ACQUISITION_CONCURRENCY_CONFLICT",
+  "EVIDENCE_ACQUISITION_PERSISTENCE_FAILED",
+] as const;
+
+export type EvidenceAcquisitionErrorCode =
+  (typeof EVIDENCE_ACQUISITION_ERROR_CODES)[number];
+
+export class EvidenceAcquisitionError extends Error {
+  readonly code: EvidenceAcquisitionErrorCode;
+
+  constructor(code: EvidenceAcquisitionErrorCode, message: string) {
+    super(message);
+    this.name = "EvidenceAcquisitionError";
+    this.code = code;
+  }
+}

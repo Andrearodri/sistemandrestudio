@@ -255,3 +255,18 @@ usar:
 
 O núcleo atual usa o executor e o runner de testes nativos do Node.js 24; não há
 framework web ou aplicação HTTP.
+
+## Aquisição oficial de evidências
+
+A Etapa 8 adiciona aquisição somente leitura a partir das URLs oficiais já
+persistidas. Allow-list versionada, DNS/IP, redirects, content type, tamanho e
+tempo são validados; o parser não executa JavaScript e o banco não guarda HTML
+completo. Use `npm run demo:evidence`, `npm run demo:evidence:postgres` e, com
+PostgreSQL local, `npm run evidence:official`. Detalhes em
+[`docs/OFFICIAL-EVIDENCE-ACQUISITION.md`](docs/OFFICIAL-EVIDENCE-ACQUISITION.md).
+Isso ainda não conclui o MVP nem autoriza geração ou publicação.
+
+A identidade da aquisição é versionada pelo conteúdo mínimo e pelas políticas:
+página inalterada gera replay; página alterada cria nova avaliação histórica.
+A chave externa permanece auditável, fixtures/legados são excluídos da seleção
+oficial e nenhum timestamp aleatório é usado para mascarar idempotência.

@@ -318,3 +318,12 @@ n8n e serviços internos não devem ser expostos diretamente à internet.
 11. integração com Lead Flow Studio;
 12. avaliação de Hermes e agentes especializados;
 13. empacotamento multiempresa, com isolamento de tenants.
+
+## Aquisição de evidências oficiais
+
+`OfficialEvidenceAcquisitionService` recebe somente `radarItemId`. O pacote
+`evidence` resolve a política da fonte, faz HTTP e parsing fora da transação e
+entrega candidatos determinísticos. O adaptador PostgreSQL valida a versão e
+persiste aquisição, verificação e transição editorial em uma única transação.
+O domínio não conhece HTML, Cheerio, HTTP ou SQL. Veja
+[`OFFICIAL-EVIDENCE-ACQUISITION.md`](OFFICIAL-EVIDENCE-ACQUISITION.md).
