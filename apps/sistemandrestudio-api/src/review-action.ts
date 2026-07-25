@@ -1,0 +1,12 @@
+import { parseArgs } from "node:util";
+import { readFile } from "node:fs/promises";
+import { HumanEditorialReviewService } from "../../../packages/application/src/index.ts";
+import { createDatabasePool,loadDatabaseConfig,PostgresHumanEditorialReviewRepository } from "../../../packages/database/src/index.ts";
+const action=process.argv[2];const parsed=parseArgs({args:process.argv.slice(3),options:{draft:{type:"string"},reviewer:{type:"string"},reason:{type:"string"},instruction:{type:"string",multiple:true},input:{type:"string"}},strict:true});
+if(!parsed.values.draft||!parsed.values.reviewer)throw new Error("EDITORIAL_REVIEW_INPUT_INVALID: --draft and --reviewer are required");
+const pool=createDatabasePool(loadDatabaseConfig());try{
+ const meta=(await pool.query<{news_id:string;version_number:number;lock_version:number}>(`SELECT d.news_id,d.version_number,n.lock_version FROM editorial_drafts d JOIN editorial_news n ON n.id=d.news_id WHERE d.id=$1`,[parsed.values.draft])).rows[0];if(!meta)throw new Error("EDITORIAL_REVIEW_DRAFT_NOT_FOUND");
+ const service=new HumanEditorialReviewService(new PostgresHumanEditorialReviewRepository(pool));const now=new Date().toISOString(),base0={reviewId:`review:${action}:${parsed.values.draft}:${meta.version_number}`,draftId:parsed.values.draft,expectedDraftVersion:meta.version_number,expectedNewsVersion:meta.lock_version,reviewerId:parsed.values.reviewer,reviewedAt:now,idempotencyKey:`review:${action}:${parsed.values.draft}:${meta.version_number}:${parsed.values.reviewer}`};const base=parsed.values.reason===undefined?base0:{...base0,reason:parsed.values.reason};
+ let result:unknown;if(action==="approve")result=await service.approve(base);else if(action==="reject")result=await service.reject(base);else if(action==="request-changes")result=await service.requestRevision({...base,revisionInstructions:parsed.values.instruction??[]});else if(action==="revise"){if(!parsed.values.input||parsed.values.input.includes(".."))throw new Error("EDITORIAL_REVIEW_INPUT_INVALID");const raw=await readFile(parsed.values.input,{encoding:"utf8"});if(raw.length>20000)throw new Error("EDITORIAL_REVIEW_INPUT_INVALID");result=await service.submitRevision({draftId:parsed.values.draft,reviewerId:parsed.values.reviewer,revision:JSON.parse(raw),reviewedAt:now,idempotencyKey:base.idempotencyKey});}else throw new Error("EDITORIAL_REVIEW_INVALID_DECISION");
+ console.log(JSON.stringify(result,null,2));
+}finally{await pool.end()}

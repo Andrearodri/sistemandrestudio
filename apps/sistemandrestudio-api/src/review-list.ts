@@ -1,0 +1,3 @@
+import { createDatabasePool, loadDatabaseConfig } from "../../../packages/database/src/index.ts";
+const pool=createDatabasePool(loadDatabaseConfig());
+try { const r=await pool.query<{id:string;format:string;title:string;validation_status:string;created_at:Date|string}>(`SELECT d.id,d.format,d.title,d.validation_status,d.created_at FROM editorial_drafts d JOIN editorial_news n ON n.id=d.news_id WHERE n.state='PENDING_APPROVAL' ORDER BY d.created_at`); if(!r.rows.length) console.log("Nenhum rascunho PENDING_APPROVAL."); for(const x of r.rows) console.log(`${x.id.slice(0,12)} | ${x.format} | v1 | ${x.title} | ${x.validation_status} | ${new Date(x.created_at).toISOString()}`); } finally { await pool.end(); }

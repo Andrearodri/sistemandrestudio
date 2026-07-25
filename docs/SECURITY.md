@@ -268,3 +268,6 @@ nunca avançam a `PENDING_APPROVAL`.
 GET, allow-list, validação DNS/IP/redirect e limites existentes. Agregados
 históricos são apenas diagnosticados. Não há autenticação, LLM, publicação ou
 execução de instruções encontradas no conteúdo externo.
+## Fronteira de revisão local
+
+A revisão humana não cria fatos, claims ou evidências. URLs precisam existir nas citações persistidas; HTML, scripts, handlers, esquemas perigosos, certeza elevada e fatos numéricos sem suporte são bloqueados deterministicamente. Nenhum comando publica conteúdo.

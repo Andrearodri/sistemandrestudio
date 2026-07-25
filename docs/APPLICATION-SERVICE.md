@@ -227,3 +227,6 @@ individual continua atômico. Consulte
 da transação. `PostgresEditorialDraftRepository` bloqueia a notícia, confere
 versão esperada e estado, grava dados e transições atomicamente. Replay usa a
 chave idempotente; chave incompatível e concorrência retornam erros estáveis.
+## HumanEditorialReviewService
+
+Coordena listagem, pacote, decisões e revisão manual por portas, sem importar PostgreSQL, Docker, rede ou variáveis de ambiente. Tempo, identidade e versões são entradas explícitas.

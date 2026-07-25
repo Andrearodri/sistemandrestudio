@@ -339,3 +339,6 @@ O comando operacional 10.1 compõe radar, relevância, aquisição oficial,
 verificação e drafting sem criar uma nova camada autônoma. O diagnóstico é
 somente leitura; o limite é dez itens e a identidade lógica é versionada. A
 persistência editorial permanece uma transação curta depois da rede.
+## Aprovação local
+
+Aplicação → porta de revisão → adaptador PostgreSQL transacional. O adaptador concentra locks, persistência, replay e auditoria; não há publicação ou integração externa nesta fronteira.

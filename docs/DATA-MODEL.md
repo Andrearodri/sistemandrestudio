@@ -278,3 +278,6 @@ de aquisição/fetch, snapshots mínimos, metadados selecionados e candidatos de
 evidência. HTML completo não é armazenado. Hashes e versões de política
 distinguem replay de conteúdo alterado; foreign keys ligam item, notícia, claim,
 evidência e página, preservando o histórico.
+## Revisão editorial
+
+`editorial_review_decisions` registra decisão, revisor, versões, política, comando e fingerprint. `editorial_revision_requests` liga instruções à versão de origem e à versão revisada. Drafts revisados são imutáveis e encadeados por `source_draft_id`.

@@ -214,3 +214,6 @@ O serviço de rascunho usa somente as transições já existentes:
 `VERIFIED → DRAFT_CREATED → PENDING_APPROVAL`. `PARTIALLY_CONFIRMED` permanece
 em `PENDING_VERIFICATION`; não há transição implícita, publicação ou aprovação
 automática.
+## Revisão humana
+
+O estado físico legado `CHANGES_REQUESTED` corresponde semanticamente a `REVISION_REQUESTED`. Somente `PENDING_APPROVAL` aceita aprovação, rejeição ou solicitação de revisão; uma versão revisada volta obrigatoriamente por `DRAFT_CREATED` e `PENDING_APPROVAL`.

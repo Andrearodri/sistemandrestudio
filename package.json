@@ -41,7 +41,16 @@
     "demo:draft": "node apps/sistemandrestudio-api/src/demo-draft.ts",
     "draft:official": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/draft-official.ts",
     "demo:draft:postgres": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/demo-draft-postgres.ts",
-    "pipeline:official:draft": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/pipeline-official-draft.ts"
+    "pipeline:official:draft": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/pipeline-official-draft.ts",
+    "review:list": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/review-list.ts",
+    "review:official": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/review-official.ts",
+    "review:show": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/review-show.ts",
+    "review:approve": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/review-action.ts approve",
+    "review:request-changes": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/review-action.ts request-changes",
+    "review:reject": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/review-action.ts reject",
+    "review:revise": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/review-action.ts revise"
+    ,"demo:review": "node apps/sistemandrestudio-api/src/demo-review.ts"
+    ,"demo:review:postgres": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/demo-review-postgres.ts"
   },
   "engines": {
     "node": ">=24.0.0"
