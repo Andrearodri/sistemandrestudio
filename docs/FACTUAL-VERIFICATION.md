@@ -128,3 +128,8 @@ não muda os thresholds da verificação: conteúdo promocional, associação fr
 ou página inacessível continuam `INSUFFICIENT_EVIDENCE`. Contradição só é
 marcada quando explícita. Arquitetura, limites e replay estão em
 [`OFFICIAL-EVIDENCE-ACQUISITION.md`](OFFICIAL-EVIDENCE-ACQUISITION.md).
+
+O funil anterior à política factual possui diagnóstico somente leitura.
+Entidade, versão, data, tipo de página, linguagem explícita e autoridade são
+explicados separadamente; score alto não substitui invariantes. Consulte
+[`EVIDENCE-DIAGNOSTICS.md`](EVIDENCE-DIAGNOSTICS.md).

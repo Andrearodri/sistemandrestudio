@@ -810,7 +810,7 @@ class MemoryAcquisitionRepository implements EvidenceAcquisitionRepository {
       eventsAdditional: resultStateChanges(
         prepared.verification.result.status,
       ),
-      policyVersion: "official-evidence-acquisition-v1",
+      policyVersion: "official-evidence-acquisition-v3",
     };
     this.#processed.set(prepared.input.idempotencyKey, {
       fingerprint: prepared.acquisitionFingerprint,

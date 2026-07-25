@@ -2,6 +2,7 @@ import {
   DEFAULT_EVIDENCE_LIMITS,
   EvidenceAcquisitionError,
   OfficialEvidenceAcquisitionService,
+  buildDeterministicClaims,
 } from "../../../packages/evidence/src/index.ts";
 import {
   PostgresEvidenceAcquisitionRepository,
@@ -35,7 +36,28 @@ try {
       item.publishedAt ??
       item.collectedAt
     );
-    const claim = inferClaim(item.editorialNewsId, item.title);
+    const claimResult = buildDeterministicClaims({
+      newsId: item.editorialNewsId,
+      title: item.title,
+      summary: item.summary,
+      publishedAt: item.publishedAt,
+    });
+    if (claimResult.claims.length === 0) {
+      reports.push({
+        fonte: item.sourceId,
+        titulo: abbreviate(item.title, 68),
+        url: abbreviate(item.canonicalUrl, 72),
+        hashAnterior: "",
+        hashAtual: "",
+        aquisicao: "SKIPPED_NO_VERIFIABLE_CLAIM",
+        anterior: "INSUFFICIENT_EVIDENCE",
+        novo: "INSUFFICIENT_EVIDENCE",
+        confianca: 0,
+        eventosAdicionais: 0,
+        diagnostico: claimResult.codes,
+      });
+      continue;
+    }
     try {
       const result = await service.acquire({
         acquisitionId: `official-acquisition-request-${safeId(item.id)}`,
@@ -48,7 +70,7 @@ try {
         occurredAt,
         retrievedAt: new Date().toISOString(),
         identityMode: "CONTENT_VERSIONED",
-        claims: [claim],
+        claims: claimResult.claims,
       });
       reports.push({
         fonte: item.sourceId,
@@ -122,27 +144,6 @@ async function persistedCounts() {
     evidence: row.evidence,
     verificationResults: row.verification_results,
     editorialEvents: row.editorial_events,
-  };
-}
-
-function inferClaim(newsId: string, title: string) {
-  const normalized = title.toLowerCase();
-  const version = normalized.match(/\bv?(\d+\.\d+(?:\.\d+)?)\b/)?.[1];
-  const type =
-    version !== undefined && /\b(release|released|version)\b/.test(normalized)
-      ? "VERSION_RELEASE" as const
-      : /\b(deprecat|sunset|end of support)\b/.test(normalized)
-        ? "DEPRECATION" as const
-        : /\b(available|availability|general availability)\b/.test(normalized)
-          ? "AVAILABILITY_CLAIM" as const
-          : /\b(launch|launched|introducing|announc|release)\b/.test(normalized)
-            ? "PRODUCT_LAUNCH" as const
-            : "GENERAL_FACT" as const;
-  return {
-    id: `${newsId}-official-page-claim`,
-    text: title,
-    type,
-    importance: "PRIMARY" as const,
   };
 }
 

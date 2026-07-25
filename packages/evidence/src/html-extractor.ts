@@ -99,12 +99,15 @@ function extractHtmlPage(
     metadata.description ?? paragraphs[0] ?? minimalText,
     limits.maxSummaryLength,
   );
-  const pageType = classifyOfficialPage(
+  const classifiedPageType = classifyOfficialPage(
     fetched.finalUrl,
     title,
     headings,
     metadata,
   );
+  const pageType = classifiedPageType === "UNKNOWN_OFFICIAL_PAGE"
+      ? pageTypeFromRelationship(relationship) ?? classifiedPageType
+      : classifiedPageType;
   const relatedLinks = extractRelatedLinks($, fetched.finalUrl);
   const contentHash = contentHashFor({
     title,
@@ -209,7 +212,7 @@ function extractMetadata(
   const openGraph = metaGroup($, "property", "og:");
   const twitter = metaGroup($, "name", "twitter:");
   const heading = cleanText($("h1").first().text()) || undefined;
-  const firstLd = jsonLd[0];
+  const firstLd = preferredJsonLdRecord(jsonLd);
   return {
     title: cleanText($("title").first().text()) ||
       openGraph["og:title"] ||
@@ -255,6 +258,46 @@ function extractMetadata(
     twitter,
     jsonLd,
   };
+}
+
+function preferredJsonLdRecord(
+  records: readonly Readonly<Record<string, unknown>>[],
+): Readonly<Record<string, unknown>> | undefined {
+  const preferredTypes = new Set([
+    "Article",
+    "BlogPosting",
+    "NewsArticle",
+    "TechArticle",
+    "SoftwareApplication",
+    "Product",
+  ]);
+  return records.find((record) => {
+    const type = record["@type"];
+    return typeof type === "string" && preferredTypes.has(type);
+  }) ?? records.find((record) =>
+    record["datePublished"] !== undefined ||
+    record["softwareVersion"] !== undefined ||
+    record["headline"] !== undefined
+  ) ?? records[0];
+}
+
+function pageTypeFromRelationship(
+  relationship: OfficialPageRelationship,
+): OfficialPageType | undefined {
+  switch (relationship) {
+    case "OFFICIAL_DOCUMENTATION":
+      return "OFFICIAL_DOCUMENTATION";
+    case "OFFICIAL_CHANGELOG":
+      return "OFFICIAL_CHANGELOG";
+    case "OFFICIAL_RELEASE":
+      return "OFFICIAL_RELEASE";
+    case "OFFICIAL_REPOSITORY":
+      return "OFFICIAL_REPOSITORY_RELEASE";
+    case "OFFICIAL_SECURITY_ADVISORY":
+      return "OFFICIAL_SECURITY_ADVISORY";
+    case "PRIMARY_ARTICLE":
+      return undefined;
+  }
 }
 
 function extractJsonLd(

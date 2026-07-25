@@ -243,3 +243,15 @@ quando a chave é reutilizada com conteúdo incompatível.
 Locks transacionais por item e identidade impedem duplicação e persistência
 parcial em concorrência. Isso não altera HTTPS, GET, allow-list, DNS/IP,
 redirects, limites, timeout ou parsing estático.
+
+## 17. Diagnóstico de evidências
+
+`evidence:diagnose` opera em `DIAGNOSE_ONLY`, compara contagens persistentes
+antes e depois e falha se detectar escrita. A saída limita campos textuais a
+300 caracteres e não inclui HTML, headers, cookies, senhas ou connection
+strings. Conteúdo externo continua dado inerte.
+
+Aliases são explícitos e versionados; não há fuzzy matching amplo. Entidade,
+tipo de página e datas são invariantes que pontuação não pode compensar.
+Preview não vira disponibilidade geral, texto promocional não prova
+performance e data de publicação não vira automaticamente data de evento.

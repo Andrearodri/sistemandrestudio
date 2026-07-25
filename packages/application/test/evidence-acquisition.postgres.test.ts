@@ -21,6 +21,7 @@ import {
   EvidenceAcquisitionError,
   OfficialEvidenceAcquisitionService,
   OfficialPageClient,
+  diagnoseEvidenceAssociations,
 } from "../../evidence/src/index.ts";
 import {
   CHANGELOG_PAGE,
@@ -37,6 +38,7 @@ import {
   createDatabasePool,
   loadDatabaseConfig,
   listOperationalEvidenceItems,
+  listStoredEvidenceDiagnosticItems,
   resetTestDatabase,
 } from "../../database/src/index.ts";
 import {
@@ -140,7 +142,7 @@ describe("official evidence acquisition with PostgreSQL", () => {
         finished: run.rows[0]?.finished_at instanceof Date,
       },
       {
-        acquisition: "official-evidence-acquisition-v1",
+        acquisition: "official-evidence-acquisition-v3",
         source: "official-page-policy-v1",
         status: "SUCCEEDED",
         finished: true,
@@ -386,6 +388,50 @@ describe("official evidence acquisition with PostgreSQL", () => {
     );
     assert.equal(result.verificationStatus, "CONFIRMED");
     assert.equal(candidate.rows[0]?.authority, "OFFICIAL_CHANGELOG");
+  });
+
+  test("recovers an accepted diagnostic with its entity method", async () => {
+    const context = await pendingItem("diagnostic-accepted");
+    await context.service.acquire(context.input);
+    await makeOperational(context.input.radarItemId, "Orbit real announcement");
+    const stored = await listStoredEvidenceDiagnosticItems(pool, 5);
+    const item = stored.find((value) =>
+      value.radarItemId === context.input.radarItemId
+    );
+    assert.ok(item);
+    const report = diagnoseEvidenceAssociations(
+      item.sourceId,
+      item.claims,
+      item.pages,
+      DEFAULT_EVIDENCE_LIMITS,
+    );
+    assert.equal(report.funnel.accepted, 1);
+    assert.equal(report.candidates[0]?.entityMatch, "EXACT_IDENTIFIER");
+    assert.equal(report.candidates[0]?.code, "ACCEPTED");
+  });
+
+  test("recovers a rejected candidate reason without persisting rejected evidence", async () => {
+    const context = await pendingItem(
+      "diagnostic-rejected",
+      PROMOTIONAL_PAGE,
+      (id) => [performanceClaim(id, "primary", "PRIMARY")],
+    );
+    await context.service.acquire(context.input);
+    await makeOperational(context.input.radarItemId, "Orbit benchmark analysis");
+    const stored = await listStoredEvidenceDiagnosticItems(pool, 5);
+    const item = stored.find((value) =>
+      value.radarItemId === context.input.radarItemId
+    );
+    assert.ok(item);
+    const report = diagnoseEvidenceAssociations(
+      item.sourceId,
+      item.claims,
+      item.pages,
+      DEFAULT_EVIDENCE_LIMITS,
+    );
+    assert.equal(report.candidates[0]?.accepted, false);
+    assert.equal(report.candidates[0]?.code, "CONTENT_PROMOTIONAL_ONLY");
+    assert.equal((await acquisitionCounts(context.input.radarItemId)).candidates, 0);
   });
 
   test("preserves prior editorial events when acquisition succeeds", async () => {
@@ -769,4 +815,15 @@ async function eventCount(newsId: string): Promise<number> {
     [newsId],
   );
   return result.rows[0]?.count ?? 0;
+}
+
+async function makeOperational(itemId: string, title: string): Promise<void> {
+  await pool.query(
+    `UPDATE collected_source_items
+     SET title = $2,
+         summary = 'Official product information.',
+         content_hash = $3
+     WHERE id = $1`,
+    [itemId, title, "a".repeat(64)],
+  );
 }

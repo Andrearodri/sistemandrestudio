@@ -76,6 +76,110 @@ export interface OfficialPageMetadata {
   readonly jsonLd: readonly Readonly<Record<string, unknown>>[];
 }
 
+export type EvidenceDiagnosticCode =
+  | "CLAIM_ENTITY_MISSING"
+  | "CLAIM_TYPE_UNSUPPORTED"
+  | "CLAIM_TOO_GENERIC"
+  | "CLAIM_DATE_MISSING"
+  | "CLAIM_VERSION_MISSING"
+  | "PAGE_TITLE_NOT_MATCHED"
+  | "PAGE_ENTITY_NOT_MATCHED"
+  | "PAGE_DATE_NOT_MATCHED"
+  | "PAGE_TYPE_NOT_ELIGIBLE"
+  | "EVIDENCE_TEXT_NOT_SPECIFIC"
+  | "EVIDENCE_AUTHORITY_INSUFFICIENT"
+  | "RELATED_PAGE_NOT_FOUND"
+  | "RELATED_PAGE_REJECTED"
+  | "ASSOCIATION_SCORE_TOO_LOW"
+  | "PERFORMANCE_PROOF_MISSING"
+  | "AVAILABILITY_PROOF_MISSING"
+  | "EVENT_DATE_AMBIGUOUS"
+  | "CONTENT_PROMOTIONAL_ONLY"
+  | "NO_VERIFIABLE_CLAIM"
+  | "ACCEPTED";
+
+export type EntityMatchMethod =
+  | "EXACT_IDENTIFIER"
+  | "NORMALIZED_EXACT"
+  | "EXPLICIT_ALIAS"
+  | "PARTIAL_UNIQUE_MATCH"
+  | "NO_MATCH";
+
+export interface AssociationScoreBreakdown {
+  readonly entity: number;
+  readonly pageType: number;
+  readonly date: number;
+  readonly explicitLanguage: number;
+  readonly authority: number;
+  readonly penalties: readonly {
+    readonly code: EvidenceDiagnosticCode;
+    readonly value: number;
+  }[];
+  readonly total: number;
+}
+
+export interface EvidenceCandidateDiagnostic {
+  readonly claimId: string;
+  readonly claimType: VerificationClaim["type"];
+  readonly pageUrl: string;
+  readonly pageType: OfficialPageType;
+  readonly relationship: OfficialPageRelationship;
+  readonly rule: string;
+  readonly accepted: boolean;
+  readonly code: EvidenceDiagnosticCode;
+  readonly reason: string;
+  readonly entityMatch: EntityMatchMethod;
+  readonly claimEntities: readonly string[];
+  readonly pageEntities: readonly string[];
+  readonly matchedEntities: readonly string[];
+  readonly dates: {
+    readonly expected?: string | undefined;
+    readonly published?: string | undefined;
+    readonly updated?: string | undefined;
+    readonly event?: string | undefined;
+  };
+  readonly missingFields: readonly string[];
+  readonly score: AssociationScoreBreakdown;
+  readonly evidence?: VerificationEvidence | undefined;
+}
+
+export interface EvidenceAssociationFunnel {
+  readonly claimsCreated: number;
+  readonly candidatesExtracted: number;
+  readonly typeCompatible: number;
+  readonly entityCompatible: number;
+  readonly dateCompatible: number;
+  readonly accepted: number;
+  readonly evidencePersistable: number;
+}
+
+export interface EvidenceAssociationDiagnosticReport {
+  readonly mode: "DIAGNOSE_ONLY" | "APPLY_VALIDATED_IMPROVEMENTS";
+  readonly claims: readonly {
+    readonly id: string;
+    readonly text: string;
+    readonly type: VerificationClaim["type"];
+    readonly importance: VerificationClaim["importance"];
+    readonly entities: readonly string[];
+    readonly version?: string | undefined;
+    readonly codes: readonly EvidenceDiagnosticCode[];
+  }[];
+  readonly candidates: readonly EvidenceCandidateDiagnostic[];
+  readonly funnel: EvidenceAssociationFunnel;
+  readonly primaryBlocker: EvidenceDiagnosticCode | "NONE";
+}
+
+export interface StoredEvidenceDiagnosticItem {
+  readonly radarItemId: string;
+  readonly sourceId: string;
+  readonly title: string;
+  readonly summary?: string | undefined;
+  readonly canonicalUrl: string;
+  readonly factualStatus: FactualVerificationResult["status"];
+  readonly claims: readonly VerificationClaim[];
+  readonly pages: readonly ExtractedOfficialPage[];
+}
+
 export interface ExtractedOfficialPage {
   readonly requestedUrl: string;
   readonly canonicalUrl: string;

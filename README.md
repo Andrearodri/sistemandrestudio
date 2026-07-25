@@ -270,3 +270,15 @@ A identidade da aquisição é versionada pelo conteúdo mínimo e pelas políti
 página inalterada gera replay; página alterada cria nova avaliação histórica.
 A chave externa permanece auditável, fixtures/legados são excluídos da seleção
 oficial e nenhum timestamp aleatório é usado para mascarar idempotência.
+
+## Diagnóstico de associação
+
+`npm run evidence:diagnose` analisa em modo somente leitura até cinco itens já
+adquiridos. O relatório mostra claims, entidades, datas, páginas, regras,
+códigos de rejeição, score e perdas do funil sem exibir HTML ou segredos.
+Detalhes em
+[`docs/EVIDENCE-DIAGNOSTICS.md`](docs/EVIDENCE-DIAGNOSTICS.md).
+
+A calibração determinística confirmou honestamente LiteRT.js e Ray 2.55 e
+manteve três tutoriais/cases sem claim verificável. Isso não conclui o MVP e
+não autoriza geração, Telegram ou publicação.

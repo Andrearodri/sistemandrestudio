@@ -12,6 +12,7 @@ import type {
   EvidenceAcquisitionResult,
   ExtractedOfficialPage,
   PreparedEvidenceAcquisition,
+  StoredEvidenceDiagnosticItem,
   StoredRadarItem,
 } from "../../evidence/src/index.ts";
 import type {
@@ -42,6 +43,127 @@ export interface OperationalStoredEvidenceItem
   readonly editorialNewsId: string;
   readonly currentVersion: number;
   readonly updatedAt?: string | undefined;
+}
+
+export async function listStoredEvidenceDiagnosticItems(
+  pool: Pool,
+  maximum: number,
+): Promise<readonly StoredEvidenceDiagnosticItem[]> {
+  const selected = await listOperationalEvidenceItems(pool, maximum);
+  const reports: StoredEvidenceDiagnosticItem[] = [];
+  for (const item of selected) {
+    const runResult = await pool.query<
+      QueryResultRow & {
+        readonly id: string;
+        readonly verification_run_id: string;
+        readonly result: EvidenceAcquisitionResult;
+      }
+    >(
+      `SELECT id, verification_run_id, result
+       FROM evidence_acquisition_runs
+       WHERE source_item_id = $1
+         AND status = 'SUCCEEDED'
+         AND verification_run_id IS NOT NULL
+       ORDER BY finished_at DESC, id DESC
+       LIMIT 1`,
+      [item.id],
+    );
+    const run = runResult.rows[0];
+    if (run === undefined) continue;
+    const claims = await pool.query<
+      QueryResultRow & {
+        readonly id: string;
+        readonly claim_text: string;
+        readonly claim_type: StoredEvidenceDiagnosticItem["claims"][number]["type"];
+        readonly importance: StoredEvidenceDiagnosticItem["claims"][number]["importance"];
+        readonly expected_subject: string | null;
+        readonly expected_date: Date | string | null;
+      }
+    >(
+      `SELECT id, claim_text, claim_type, importance,
+              expected_subject, expected_date
+       FROM verification_claims
+       WHERE run_id = $1
+       ORDER BY ordinal, id`,
+      [run.verification_run_id],
+    );
+    const pages = await pool.query<
+      QueryResultRow & {
+        readonly requested_url: string;
+        readonly final_url: string;
+        readonly relationship: ExtractedOfficialPage["relationship"];
+        readonly status_code: number;
+        readonly content_type: string;
+        readonly response_bytes: number;
+        readonly redirect_count: number;
+        readonly fetched_at: Date | string;
+        readonly page_type: ExtractedOfficialPage["pageType"];
+        readonly title: string;
+        readonly summary: string;
+        readonly headings: readonly string[];
+        readonly minimal_text: string;
+        readonly selected_metadata: ExtractedOfficialPage["metadata"];
+        readonly content_hash: string;
+      }
+    >(
+      `SELECT page_fetch.requested_url, page_fetch.final_url,
+              page_fetch.relationship,
+              page_fetch.http_status AS status_code, page_fetch.content_type,
+              page_fetch.response_bytes, page_fetch.redirect_count,
+              page_fetch.finished_at AS fetched_at,
+              snapshot.page_type, snapshot.title, snapshot.summary,
+              snapshot.headings, snapshot.minimal_text,
+              snapshot.selected_metadata, snapshot.content_hash
+       FROM official_page_fetch_runs page_fetch
+       JOIN official_page_snapshots snapshot
+         ON snapshot.source_item_id = page_fetch.source_item_id
+        AND snapshot.canonical_url = page_fetch.final_url
+        AND snapshot.content_hash = page_fetch.content_hash
+       WHERE page_fetch.acquisition_run_id = $1
+       ORDER BY page_fetch.started_at, page_fetch.id`,
+      [run.id],
+    );
+    reports.push({
+      radarItemId: item.id,
+      sourceId: item.sourceId,
+      title: item.title,
+      summary: item.summary,
+      canonicalUrl: item.canonicalUrl,
+      factualStatus: run.result.verificationStatus,
+      claims: claims.rows.map((claim) => ({
+        id: claim.id,
+        text: claim.claim_text,
+        type: claim.claim_type,
+        importance: claim.importance,
+        expectedSubject: claim.expected_subject ?? undefined,
+        expectedDate: optionalIso(claim.expected_date),
+      })),
+      pages: pages.rows.map((page) => ({
+        requestedUrl: page.requested_url,
+        canonicalUrl: page.final_url,
+        relationship: page.relationship,
+        pageType: page.page_type,
+        title: page.title,
+        summary: page.summary,
+        headings: page.headings,
+        minimalText: page.minimal_text,
+        metadata: page.selected_metadata,
+        relatedLinks: [],
+        contentHash: page.content_hash,
+        fetchedAt: iso(page.fetched_at),
+        fetch: {
+          requestedUrl: page.requested_url,
+          finalUrl: page.final_url,
+          statusCode: page.status_code,
+          contentType: page.content_type,
+          responseBytes: page.response_bytes,
+          redirectCount: page.redirect_count,
+          fetchedAt: iso(page.fetched_at),
+        },
+      })),
+    });
+  }
+  return reports;
 }
 
 export async function listOperationalEvidenceItems(

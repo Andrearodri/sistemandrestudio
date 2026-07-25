@@ -102,6 +102,12 @@ Contradições só são emitidas quando explícitas: indisponibilidade, remoçã
 versão/data incompatível ou preview em vez de disponibilidade geral. Ambiguidade
 permanece `INSUFFICIENT_EVIDENCE`.
 
+A política `official-evidence-acquisition-v3` adiciona diagnóstico do funil,
+normalização explicável de entidades e claims operacionais verificáveis.
+`GENERAL_FACT` derivado apenas de título não cria evidência, e número de parte
+de uma série não é versão. Veja
+[`EVIDENCE-DIAGNOSTICS.md`](EVIDENCE-DIAGNOSTICS.md).
+
 Texto externo, inclusive “ignore instruções”, “execute” ou “envie credenciais”,
 é dado inerte. Ele não cria URLs, muda política, executa comandos nem altera a
 decisão editorial.
@@ -180,6 +186,7 @@ item, e a persistência é recusada após cancelamento.
 npm run demo:evidence
 npm run demo:evidence:postgres
 npm run evidence:official
+npm run evidence:diagnose
 ```
 
 As demos usam fixtures locais. `evidence:official` processa no máximo cinco

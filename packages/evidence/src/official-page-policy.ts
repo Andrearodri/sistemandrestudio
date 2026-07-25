@@ -1,7 +1,7 @@
 import type { EvidenceLimits } from "./types.ts";
 
 export const OFFICIAL_EVIDENCE_POLICY_VERSION =
-  "official-evidence-acquisition-v1";
+  "official-evidence-acquisition-v3";
 
 export const DEFAULT_EVIDENCE_LIMITS: EvidenceLimits = {
   maxItemsPerRun: 5,
