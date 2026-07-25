@@ -573,3 +573,12 @@ implementadas. A aquisição parte de itens do radar, usa allow-list e persiste
 somente conteúdo mínimo. O próximo incremento depende de nova autorização; LLM,
 geração, Telegram, n8n, publicação e deploy continuam fora do escopo. O MVP
 permanece incompleto.
+# Etapa 10 — geração controlada
+
+O MVP agora possui a preparação local de rascunhos factuais para itens
+`CONFIRMED`. A aprovação humana continua pendente e não há LLM, Telegram ou
+publicação. O próximo passo não está autorizado automaticamente.
+
+A validação 10.1 comprovou um ciclo oficial atual até `PENDING_APPROVAL` e
+replay integral. A identidade lógica evita criar outro agregado para a mesma
+fonte/external ID/URL/hash/evento; confirmações históricas não são reabertas.

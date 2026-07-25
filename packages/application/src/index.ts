@@ -6,4 +6,6 @@ export * from "./ports.ts";
 export * from "./relevance-workflow.ts";
 export * from "./official-source-radar-service.ts";
 export * from "./verification-workflow-service.ts";
+export * from "./editorial-draft-workflow-service.ts";
+export * from "./official-draft-pipeline.ts";
 export * from "./result.ts";

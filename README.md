@@ -282,3 +282,16 @@ Detalhes em
 A calibração determinística confirmou honestamente LiteRT.js e Ray 2.55 e
 manteve três tutoriais/cases sem claim verificável. Isso não conclui o MVP e
 não autoriza geração, Telegram ou publicação.
+
+## Rascunhos editoriais controlados
+
+A Etapa 10 adiciona um pacote editorial determinístico, ligado a claims e
+evidências, para gerar rascunhos locais somente de itens `CONFIRMED` em
+`VERIFIED`. São suportados LinkedIn curto e notícia para site, ambos com
+citações e validação antes de `PENDING_APPROVAL`. Não há LLM, Telegram ou
+publicação. Consulte [`docs/EDITORIAL-DRAFTING.md`](docs/EDITORIAL-DRAFTING.md).
+
+O ciclo oficial atual pode ser validado com `npm run pipeline:official:draft`.
+Ele limita a amostra a dez itens, preserva agregados históricos e comprova
+replay sem publicação, Telegram ou LLM. Um item oficial real chegou a
+`PENDING_APPROVAL`; isso não conclui o MVP.

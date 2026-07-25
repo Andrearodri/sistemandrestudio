@@ -208,3 +208,9 @@ npm run demo
 3. mapear callbacks autenticados do Telegram para decisões humanas;
 4. ligar um adaptador de LLM somente ao comando `CreateDraft`;
 5. manter a máquina independente de todas essas integrações.
+# Etapa 10
+
+O serviço de rascunho usa somente as transições já existentes:
+`VERIFIED → DRAFT_CREATED → PENDING_APPROVAL`. `PARTIALLY_CONFIRMED` permanece
+em `PENDING_VERIFICATION`; não há transição implícita, publicação ou aprovação
+automática.

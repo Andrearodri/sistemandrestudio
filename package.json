@@ -37,7 +37,11 @@
     "demo:evidence": "node apps/sistemandrestudio-api/src/demo-evidence.ts",
     "demo:evidence:postgres": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/demo-evidence-postgres.ts",
     "evidence:official": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/evidence-official.ts",
-    "evidence:diagnose": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/evidence-diagnose.ts"
+    "evidence:diagnose": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/evidence-diagnose.ts",
+    "demo:draft": "node apps/sistemandrestudio-api/src/demo-draft.ts",
+    "draft:official": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/draft-official.ts",
+    "demo:draft:postgres": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/demo-draft-postgres.ts",
+    "pipeline:official:draft": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/pipeline-official-draft.ts"
   },
   "engines": {
     "node": ">=24.0.0"

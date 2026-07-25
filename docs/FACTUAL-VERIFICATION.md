@@ -133,3 +133,8 @@ O funil anterior à política factual possui diagnóstico somente leitura.
 Entidade, versão, data, tipo de página, linguagem explícita e autoridade são
 explicados separadamente; score alto não substitui invariantes. Consulte
 [`EVIDENCE-DIAGNOSTICS.md`](EVIDENCE-DIAGNOSTICS.md).
+# Uso editorial na Etapa 10
+
+Somente `CONFIRMED` alimenta o fluxo normal de rascunho. A confirmação parcial
+é preservada como sinal de revisão humana, mas não cria uma versão editorial
+persistida nesta etapa. Claims e evidências permanecem a fonte de cada fato.

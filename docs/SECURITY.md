@@ -255,3 +255,16 @@ Aliases são explícitos e versionados; não há fuzzy matching amplo. Entidade,
 tipo de página e datas são invariantes que pontuação não pode compensar.
 Preview não vira disponibilidade geral, texto promocional não prova
 performance e data de publicação não vira automaticamente data de evento.
+# Rascunhos editoriais controlados
+
+A geração editorial local aceita apenas o `EditorialBrief` determinístico: fatos
+permitidos, claims, evidências e citações já persistidas. Ela não recebe HTML,
+URLs arbitrárias, textos completos de páginas, instruções externas, credenciais
+ou configuração operacional. O validador bloqueia scripts/HTML, citações
+ausentes, claims proibidas e linguagem sensacionalista. Rascunhos bloqueados
+nunca avançam a `PENDING_APPROVAL`.
+
+`pipeline:official:draft` usa somente as cinco fontes já cadastradas, HTTPS,
+GET, allow-list, validação DNS/IP/redirect e limites existentes. Agregados
+históricos são apenas diagnosticados. Não há autenticação, LLM, publicação ou
+execução de instruções encontradas no conteúdo externo.

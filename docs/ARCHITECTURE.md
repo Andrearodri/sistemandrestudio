@@ -327,3 +327,15 @@ entrega candidatos determinísticos. O adaptador PostgreSQL valida a versão e
 persiste aquisição, verificação e transição editorial em uma única transação.
 O domínio não conhece HTML, Cheerio, HTTP ou SQL. Veja
 [`OFFICIAL-EVIDENCE-ACQUISITION.md`](OFFICIAL-EVIDENCE-ACQUISITION.md).
+# Etapa 10 — rascunho controlado
+
+Após a verificação factual, `EditorialDraftWorkflowService` constrói um
+`EditorialBrief` puro e envia-o ao gerador determinístico. O adaptador
+PostgreSQL revalida o estado `VERIFIED` sob lock, persiste brief/draft/citações
+e aplica `CreateDraft` + `SubmitForApproval` em uma única transação. Uma futura
+porta de LLM fica atrás de `EditorialTextGenerator`; nenhum provedor é conectado.
+
+O comando operacional 10.1 compõe radar, relevância, aquisição oficial,
+verificação e drafting sem criar uma nova camada autônoma. O diagnóstico é
+somente leitura; o limite é dez itens e a identidade lógica é versionada. A
+persistência editorial permanece uma transação curta depois da rede.

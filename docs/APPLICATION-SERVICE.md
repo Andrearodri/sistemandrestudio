@@ -221,3 +221,9 @@ individual continua atômico. Consulte
 - `ReceiveNews` não produz evento editorial, mas registra idempotência;
 - não há HTTP ou integração externa;
 - o MVP não está concluído.
+# Serviço de rascunho editorial
+
+`EditorialDraftWorkflowService.createDraft` prepara o pacote e a geração fora
+da transação. `PostgresEditorialDraftRepository` bloqueia a notícia, confere
+versão esperada e estado, grava dados e transições atomicamente. Replay usa a
+chave idempotente; chave incompatível e concorrência retornam erros estáveis.
