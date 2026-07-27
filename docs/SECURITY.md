@@ -272,6 +272,17 @@ execução de instruções encontradas no conteúdo externo.
 
 A revisão humana não cria fatos, claims ou evidências. URLs precisam existir nas citações persistidas; HTML, scripts, handlers, esquemas perigosos, certeza elevada e fatos numéricos sem suporte são bloqueados deterministicamente. Nenhum comando publica conteúdo.
 
+Equivalências localizadas usam catálogo fechado, puro e versionado. A entidade
+precisa permanecer idêntica e o predicado deve corresponder exatamente a uma
+formulação cadastrada com o mesmo nível de certeza. Não há tradução livre,
+modelo de linguagem, rede, fuzzy matching ou embeddings. Uma revisão localizada
+é aceita somente quando nenhuma outra parte do título, subtítulo ou corpo muda;
+assim, não pode introduzir disponibilidade, temporalidade, números, datas,
+versões, URLs, comparações ou benefícios não confirmados. O método de
+preservação e o identificador da equivalência ficam na validação e na auditoria
+técnica, enquanto fatos, claims, evidências, citações e warnings permanecem
+imutáveis.
+
 ## Exportação local
 
 Saídas ficam sob raiz controlada e ignorada, com paths relativos, proteção contra traversal e escrita atômica. Conteúdo existente divergente nunca é sobrescrito. Exportadores não acessam rede nem credenciais.

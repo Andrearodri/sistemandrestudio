@@ -71,3 +71,19 @@ revisão humana continua obrigatória e nenhum texto é publicado.
 Uma correção humana preserva brief, evidências, citações e warnings, cria nova versão e executa novamente a validação determinística antes de retornar a `PENDING_APPROVAL`.
 
 Somente a versão aprovada pode originar pacote local; o exportador preserva corpo, citações e warnings sem gerar novo conteúdo.
+
+### Localização controlada de fatos
+
+Uma revisão pode representar em `pt-BR` um fato confirmado em inglês somente
+por um predicado cadastrado em `editorial-fact-localization.ts`. O processo
+separa entidade e predicado, preserva literalmente a entidade após normalização
+limitada de espaços, caixa e pontuação terminal, e não altera o grau de certeza,
+temporalidade ou disponibilidade.
+
+O único padrão atual converte `was officially announced` em
+`foi anunciado oficialmente`. O catálogo não é um tradutor e não aceita
+sinônimos, aproximação, inferência, LLM ou rede. A preservação literal continua
+prioritária; a equivalência localizada é usada apenas quando a primeira não
+corresponde. Todas as validações de citações, warnings, URLs, números, datas,
+versões, claims proibidas, sensacionalismo e conteúdo inseguro continuam sendo
+executadas.
