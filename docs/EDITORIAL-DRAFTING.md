@@ -69,3 +69,5 @@ revisão humana continua obrigatória e nenhum texto é publicado.
 ## Revisões
 
 Uma correção humana preserva brief, evidências, citações e warnings, cria nova versão e executa novamente a validação determinística antes de retornar a `PENDING_APPROVAL`.
+
+Somente a versão aprovada pode originar pacote local; o exportador preserva corpo, citações e warnings sem gerar novo conteúdo.

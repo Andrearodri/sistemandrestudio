@@ -2,6 +2,8 @@
 
 O núcleo local inclui revisão editorial humana auditável antes de qualquer publicação. Consulte `docs/HUMAN-EDITORIAL-REVIEW.md`; o MVP ainda não está concluído.
 
+Pacotes locais supervisionados podem ser preparados após aprovação explícita; consulte `docs/PUBLICATION-PACKAGES.md`. Nenhuma integração publica conteúdo remotamente.
+
 O MVP inclui um radar de fontes oficiais em modo somente leitura: feed público → normalização → deduplicação → relevância → persistência → relatório local. Veja [as fontes oficiais](docs/OFFICIAL-SOURCES.md) e a [operação do radar](docs/RADAR-OPERATIONS.md). Não há publicação, integração Telegram, LLM, n8n ou acesso a contas nesta etapa.
 
 A verificação factual determinística registra claims, evidências e resultados

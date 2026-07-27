@@ -217,3 +217,5 @@ automática.
 ## Revisão humana
 
 O estado físico legado `CHANGES_REQUESTED` corresponde semanticamente a `REVISION_REQUESTED`. Somente `PENDING_APPROVAL` aceita aprovação, rejeição ou solicitação de revisão; uma versão revisada volta obrigatoriamente por `DRAFT_CREATED` e `PENDING_APPROVAL`.
+
+`APPROVED → READY_FOR_PUBLICATION` ocorre somente após exportação local validada e manifesto persistido. Não existe estado `PUBLISHED`.

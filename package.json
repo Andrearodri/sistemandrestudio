@@ -50,7 +50,14 @@
     "review:reject": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/review-action.ts reject",
     "review:revise": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/review-action.ts revise"
     ,"demo:review": "node apps/sistemandrestudio-api/src/demo-review.ts"
-    ,"demo:review:postgres": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/demo-review-postgres.ts"
+    ,"demo:review:postgres": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/demo-review-postgres.ts",
+    "publication:list-eligible": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/publication-cli.ts list-eligible",
+    "publication:preview": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/publication-cli.ts preview",
+    "publication:export": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/publication-cli.ts export",
+    "publication:list": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/publication-cli.ts list",
+    "publication:show": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/publication-cli.ts show"
+    ,"demo:publication": "node apps/sistemandrestudio-api/src/demo-publication.ts"
+    ,"demo:publication:postgres": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/demo-publication-postgres.ts"
   },
   "engines": {
     "node": ">=24.0.0"

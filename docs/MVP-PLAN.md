@@ -583,3 +583,5 @@ A validação 10.1 comprovou um ciclo oficial atual até `PENDING_APPROVAL` e
 replay integral. A identidade lógica evita criar outro agregado para a mesma
 fonte/external ID/URL/hash/evento; confirmações históricas não são reabertas.
 Etapa 11: revisão humana local em validação. A conclusão desta etapa não representa conclusão do MVP nem autoriza publicação.
+
+Etapa 12.1: pacote local supervisionado em implementação; publicação remota permanece fora do escopo.

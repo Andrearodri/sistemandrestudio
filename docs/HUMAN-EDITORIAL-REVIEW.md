@@ -13,3 +13,5 @@ O serviço de aplicação não conhece SQL. O adaptador PostgreSQL carrega o pac
 `review:show -- --draft ID` recupera notícia, versão, draft, brief, claims, fatos, evidências, citações, warnings e históricos sem acesso à internet. `review:approve`, `review:reject`, `review:request-changes` e `review:revise` exigem revisor explícito. A revisão aceita JSON local limitado e bloqueia HTML, handlers, esquemas perigosos, URLs não citadas, números/datas/versões sem suporte, sensacionalismo, certeza elevada e afirmações comerciais ou de desempenho não confirmadas.
 
 As migrations 010 e 011 são incrementais: a primeira cria o registro de revisão; a segunda acrescenta fingerprint funcional, metadados auditáveis e versionamento de drafts. Replay usa chave e fingerprint persistentes; conteúdo incompatível gera conflito. Concorrência é protegida por versão esperada e `FOR UPDATE`; qualquer falha provoca rollback. A etapa não publica conteúdo e o draft real permanece pendente até uma decisão humana explícita.
+
+Uma decisão `APPROVE` é pré-requisito para a Etapa 12.1, que apenas prepara arquivos locais e nunca substitui a decisão humana.

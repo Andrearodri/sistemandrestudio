@@ -1,6 +1,7 @@
 # Dependências e artefatos Node.js
 node_modules/
 dist/
+output/
 build/
 coverage/
 *.tsbuildinfo

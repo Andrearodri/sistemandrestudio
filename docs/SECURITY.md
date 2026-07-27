@@ -271,3 +271,7 @@ execução de instruções encontradas no conteúdo externo.
 ## Fronteira de revisão local
 
 A revisão humana não cria fatos, claims ou evidências. URLs precisam existir nas citações persistidas; HTML, scripts, handlers, esquemas perigosos, certeza elevada e fatos numéricos sem suporte são bloqueados deterministicamente. Nenhum comando publica conteúdo.
+
+## Exportação local
+
+Saídas ficam sob raiz controlada e ignorada, com paths relativos, proteção contra traversal e escrita atômica. Conteúdo existente divergente nunca é sobrescrito. Exportadores não acessam rede nem credenciais.

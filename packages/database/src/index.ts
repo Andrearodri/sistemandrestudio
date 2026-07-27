@@ -8,3 +8,4 @@ export * from "./postgres-verification-repository.ts";
 export * from "./postgres-evidence-acquisition-repository.ts";
 export * from "./postgres-editorial-draft-repository.ts";
 export * from "./postgres-human-editorial-review-repository.ts";
+export * from "./postgres-publication-package-repository.ts";

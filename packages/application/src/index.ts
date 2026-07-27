@@ -9,4 +9,5 @@ export * from "./verification-workflow-service.ts";
 export * from "./editorial-draft-workflow-service.ts";
 export * from "./official-draft-pipeline.ts";
 export * from "./human-editorial-review-service.ts";
+export * from "./publication-package-service.ts";
 export * from "./result.ts";

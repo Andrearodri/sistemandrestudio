@@ -1,0 +1,22 @@
+import assert from "node:assert/strict";
+import {mkdtemp,readFile,rm,writeFile} from "node:fs/promises";
+import {join} from "node:path";
+import {tmpdir} from "node:os";
+import {afterEach,describe,test} from "node:test";
+import {buildPublicationPackage,LocalPublicationExporter,publicationSlug,PublicationPackageError,validatePublicationPackage,type PublicationContext} from "../packages/application/src/index.ts";
+const dirs:string[]=[];afterEach(async()=>{for(const d of dirs.splice(0))await rm(d,{recursive:true,force:true})});
+const citation={evidenceId:"e1",claimId:"c1",sourceId:"official",canonicalUrl:"https://example.com/official",title:"Official source"};
+const context:PublicationContext={newsId:"n1",newsVersion:7,newsState:"APPROVED",draftVersion:1,approvalDecisionId:"approval-1",reviewerId:"andre-local",approvedAt:"2026-07-27T10:00:00.000Z",draft:{draftId:"d1",newsId:"n1",briefId:"b1",format:"WEBSITE_NEWS_BRIEF",language:"pt-BR",title:"Grounding com acentuação",subtitle:"Resumo",body:"Conteúdo aprovado.",sourceCitations:[citation],warnings:[],prohibitedClaimsChecked:true,validationStatus:"VALID",generatorId:"g",generatorVersion:"v1",createdAt:"2026-07-27T09:00:00.000Z"}};
+describe("supervised local publication packages",()=>{
+ test("builds deterministic packages",()=>assert.deepEqual(buildPublicationPackage(context,"WEBSITE_EXPORT","2026-07-27T11:00:00.000Z"),buildPublicationPackage(context,"WEBSITE_EXPORT","2026-07-27T11:00:00.000Z")));
+ test("blocks a pending draft",()=>assert.throws(()=>buildPublicationPackage({...context,newsState:"PENDING_APPROVAL"},"WEBSITE_EXPORT",context.approvedAt),(e:PublicationPackageError)=>e.code==="PUBLICATION_PACKAGE_NOT_APPROVED"));
+ test("requires citations",()=>assert.throws(()=>buildPublicationPackage({...context,draft:{...context.draft,sourceCitations:[]}},"LINKEDIN_EXPORT",context.approvedAt),(e:PublicationPackageError)=>e.code==="PUBLICATION_PACKAGE_CITATION_MISSING"));
+ test("normalizes a safe slug",()=>assert.equal(publicationSlug("Olá, AndréStudio!","id"),"ola-andrestudio"));
+ test("validates safe content",()=>assert.equal(validatePublicationPackage(buildPublicationPackage(context,"WEBSITE_EXPORT",context.approvedAt)),"VALID"));
+ test("blocks HTML",()=>assert.equal(validatePublicationPackage(buildPublicationPackage({...context,draft:{...context.draft,body:"<script>x</script>"}},"WEBSITE_EXPORT",context.approvedAt)),"BLOCKED"));
+ test("exports website markdown, json and manifest",async()=>{const root=await mkdtemp(join(tmpdir(),"publication-test-"));dirs.push(root);const p=buildPublicationPackage(context,"WEBSITE_EXPORT",context.approvedAt),r=await new LocalPublicationExporter(root).export(p);assert.equal(r.files.length,3);assert.match(await readFile(join(root,`website/${p.slug}.md`),"utf8"),/AndréStudio\.dev/);assert.match(await readFile(join(root,`manifests/${p.publicationId}.json`),"utf8"),/READY_FOR_PUBLICATION/)});
+ test("exports LinkedIn without publishing",async()=>{const root=await mkdtemp(join(tmpdir(),"publication-test-"));dirs.push(root);const p=buildPublicationPackage(context,"LINKEDIN_EXPORT",context.approvedAt);await new LocalPublicationExporter(root).export(p);assert.match(await readFile(join(root,`linkedin/${p.publicationId}.md`),"utf8"),/ainda não publicado/)});
+ test("replays identical files",async()=>{const root=await mkdtemp(join(tmpdir(),"publication-test-"));dirs.push(root);const p=buildPublicationPackage(context,"LINKEDIN_EXPORT",context.approvedAt),e=new LocalPublicationExporter(root);await e.export(p);assert.equal((await e.export(p)).replayed,true)});
+ test("rejects an existing different file",async()=>{const root=await mkdtemp(join(tmpdir(),"publication-test-"));dirs.push(root);const p=buildPublicationPackage(context,"LINKEDIN_EXPORT",context.approvedAt),e=new LocalPublicationExporter(root);await e.export(p);await writeFile(join(root,`linkedin/${p.publicationId}.md`),"tampered");await assert.rejects(e.export(p),(x:PublicationPackageError)=>x.code==="PUBLICATION_PACKAGE_IDEMPOTENCY_CONFLICT")});
+ test("rejects an unsafe root",()=>assert.throws(()=>new LocalPublicationExporter(".."),(e:PublicationPackageError)=>e.code==="PUBLICATION_PACKAGE_OUTPUT_PATH_INVALID"));
+});

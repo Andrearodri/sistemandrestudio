@@ -342,3 +342,7 @@ persistência editorial permanece uma transação curta depois da rede.
 ## Aprovação local
 
 Aplicação → porta de revisão → adaptador PostgreSQL transacional. O adaptador concentra locks, persistência, replay e auditoria; não há publicação ou integração externa nesta fronteira.
+
+## Pacotes de publicação
+
+O serviço determinístico monta o pacote, o exportador local controla paths e escrita atômica, e o adaptador PostgreSQL persiste manifesto, hashes e auditoria antes de marcar o agregado como pronto.

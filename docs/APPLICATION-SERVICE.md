@@ -230,3 +230,5 @@ chave idempotente; chave incompatível e concorrência retornam erros estáveis.
 ## HumanEditorialReviewService
 
 Coordena listagem, pacote, decisões e revisão manual por portas, sem importar PostgreSQL, Docker, rede ou variáveis de ambiente. Tempo, identidade e versões são entradas explícitas.
+
+`PublicationPackageService` oferece elegibilidade, preview sem efeitos, exportação explícita e consulta de pacotes por portas de repositório e filesystem.
