@@ -232,3 +232,8 @@ chave idempotente; chave incompatível e concorrência retornam erros estáveis.
 Coordena listagem, pacote, decisões e revisão manual por portas, sem importar PostgreSQL, Docker, rede ou variáveis de ambiente. Tempo, identidade e versões são entradas explícitas.
 
 `PublicationPackageService` oferece elegibilidade, preview sem efeitos, exportação explícita e consulta de pacotes por portas de repositório e filesystem.
+
+`WebsitePublicationPlanningService` lista pacotes de website prontos, valida a
+exportação local e persiste plano determinístico. Também oferece consulta e uma
+inspeção local opcional, limitada e somente leitura. Não possui método de
+publicação.

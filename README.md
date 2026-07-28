@@ -287,6 +287,19 @@ A calibração determinística confirmou honestamente LiteRT.js e Ray 2.55 e
 manteve três tutoriais/cases sem claim verificável. Isso não conclui o MVP e
 não autoriza geração, Telegram ou publicação.
 
+## Planejamento de publicação no website
+
+A Etapa 12.4 adiciona somente planos supervisionados `DRY_RUN` para pacotes
+`WEBSITE_EXPORT` já prontos. Arquivos, hashes e manifesto são revalidados antes
+da persistência; operações remotas ficam bloqueadas e `LIVE` é recusado.
+Consulte [`docs/WEBSITE-PUBLICATION-PLANNING.md`](docs/WEBSITE-PUBLICATION-PLANNING.md).
+
+O perfil v2 usa `https://andrestudio.dev.br` como domínio canônico de
+planejamento. DuckDNS permanece apenas como referência técnica legada. A
+estrutura do site, estratégia, diretórios, rota, build e restart são `UNKNOWN`;
+DNS, propagação e HTTPS continuam pendentes e nenhuma alteração externa foi
+executada.
+
 ## Rascunhos editoriais controlados
 
 A Etapa 10 adiciona um pacote editorial determinístico, ligado a claims e

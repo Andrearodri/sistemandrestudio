@@ -585,3 +585,10 @@ fonte/external ID/URL/hash/evento; confirmações históricas não são reaberta
 Etapa 11: revisão humana local em validação. A conclusão desta etapa não representa conclusão do MVP nem autoriza publicação.
 
 Etapa 12.1: pacote local supervisionado em implementação; publicação remota permanece fora do escopo.
+
+Etapa 12.4: planejamento supervisionado de website em `DRY_RUN` implementado.
+Nenhum deploy, upload, restart, acesso remoto ou publicação foi autorizado.
+
+Correção 12.4.1: `andrestudio.dev.br` é o domínio canônico de planejamento;
+DuckDNS é legado. DNS, propagação, HTTPS e redirecionamento continuam pendentes,
+e nenhuma estrutura de site é presumida antes de inspeção.

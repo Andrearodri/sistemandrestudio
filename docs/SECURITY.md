@@ -286,3 +286,18 @@ imutáveis.
 ## Exportação local
 
 Saídas ficam sob raiz controlada e ignorada, com paths relativos, proteção contra traversal e escrita atômica. Conteúdo existente divergente nunca é sobrescrito. Exportadores não acessam rede nem credenciais.
+
+## Planejamento de website
+
+O planejador relê e verifica hash, tamanho, identidade e manifesto de cada
+arquivo antes de persistir. `LIVE` é desabilitado. Upload, restart, cache e
+verificação pública são operações remotas explicitamente bloqueadas em
+`DRY_RUN`. A inspeção opcional exige diretório local explícito, recusa symlink e
+raízes amplas, limita profundidade e quantidade, ignora `.git`, `.env`,
+`node_modules` e `dist`, e nunca executa scripts.
+
+O domínio canônico configurado para novos planos é `andrestudio.dev.br`, mas
+DNS e HTTPS ainda não foram verificados. DuckDNS é somente metadado legado.
+Isso não autoriza resolução ativa, alteração de zona, certificado,
+redirecionamento, Nginx ou acesso ao servidor. Campos operacionais desconhecidos
+usam `UNKNOWN`, e as operações locais dependem de inspeção do target.

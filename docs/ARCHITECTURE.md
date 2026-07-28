@@ -346,3 +346,13 @@ Aplicação → porta de revisão → adaptador PostgreSQL transacional. O adapt
 ## Pacotes de publicação
 
 O serviço determinístico monta o pacote, o exportador local controla paths e escrita atômica, e o adaptador PostgreSQL persiste manifesto, hashes e auditoria antes de marcar o agregado como pronto.
+
+## Plano de website
+
+Aplicação → leitor local validado → porta de planos → PostgreSQL. Essa fronteira
+somente descreve uma execução futura. O modo `DRY_RUN` bloqueia operações
+remotas; plataforma, build, deploy, restart e rollback não são inferidos.
+
+O target é versionado separadamente da política. A versão v2 troca o domínio
+canônico para `andrestudio.dev.br` e representa estratégia, diretórios, rota e
+build como `UNKNOWN`; planos v1 com DuckDNS permanecem históricos.

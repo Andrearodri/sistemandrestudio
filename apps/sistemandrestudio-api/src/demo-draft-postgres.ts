@@ -37,6 +37,9 @@ try {
 async function cleanup(): Promise<void> {
   await withTransaction(pool, async (client) => {
     await client.query(`UPDATE editorial_news SET state = 'APPROVED', current_draft_version_id = NULL, current_approval_request_id = NULL WHERE id = $1`, [newsId]);
+    await client.query(`DELETE FROM website_publication_plan_prerequisites WHERE plan_id IN (SELECT id FROM website_publication_plans WHERE news_id = $1)`, [newsId]);
+    await client.query(`DELETE FROM website_publication_plan_operations WHERE plan_id IN (SELECT id FROM website_publication_plans WHERE news_id = $1)`, [newsId]);
+    await client.query(`DELETE FROM website_publication_plans WHERE news_id = $1`, [newsId]);
     await client.query(`DELETE FROM publication_package_citations WHERE publication_id IN (SELECT id FROM publication_packages WHERE news_id = $1)`, [newsId]);
     await client.query(`DELETE FROM publication_package_files WHERE publication_id IN (SELECT id FROM publication_packages WHERE news_id = $1)`, [newsId]);
     await client.query(`DELETE FROM publication_packages WHERE news_id = $1`, [newsId]);

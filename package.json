@@ -58,6 +58,13 @@
     "publication:show": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/publication-cli.ts show"
     ,"demo:publication": "node apps/sistemandrestudio-api/src/demo-publication.ts"
     ,"demo:publication:postgres": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/demo-publication-postgres.ts"
+    ,"website:list-ready": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/website-publication-cli.ts list-ready"
+    ,"website:plan": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/website-publication-cli.ts plan"
+    ,"website:plan:show": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/website-publication-cli.ts show"
+    ,"website:plan:list": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/website-publication-cli.ts list"
+    ,"website:inspect-local": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/website-publication-cli.ts inspect-local"
+    ,"demo:website-plan": "node apps/sistemandrestudio-api/src/demo-website-publication.ts"
+    ,"demo:website-plan:postgres": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/demo-website-publication-postgres.ts"
   },
   "engines": {
     "node": ">=24.0.0"

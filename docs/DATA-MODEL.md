@@ -283,3 +283,7 @@ evidência e página, preservando o histórico.
 `editorial_review_decisions` registra decisão, revisor, versões, política, comando e fingerprint. `editorial_revision_requests` liga instruções à versão de origem e à versão revisada. Drafts revisados são imutáveis e encadeados por `source_draft_id`.
 
 `publication_packages`, `publication_package_files` e `publication_package_citations` armazenam somente identidade, paths relativos, hashes, tamanhos e referências auditáveis.
+
+`website_publication_plans`, `website_publication_plan_operations` e
+`website_publication_plan_prerequisites` armazenam o plano `DRY_RUN`, identidade,
+fingerprint, estados e requisitos operacionais. Não duplicam o corpo editorial.

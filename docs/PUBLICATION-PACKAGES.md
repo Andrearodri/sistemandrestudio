@@ -17,3 +17,10 @@ Identidade, slug e hashes são determinísticos. A escrita usa arquivo temporár
 A migration 012 cria pacotes, arquivos e citações. Persistência, transição para `READY_FOR_PUBLICATION` e auditoria ocorrem em transação PostgreSQL. Use `publication:list-eligible`, `publication:preview`, `publication:export`, `publication:list` e `publication:show`. Preview não produz efeitos; exportação exige ação explícita e o mesmo revisor que aprovou.
 
 As demos `demo:publication` e `demo:publication:postgres` usam fixtures e limpam apenas seus diretórios temporários. Não há rede, credenciais, API remota, LLM ou postagem automática.
+
+Um pacote `WEBSITE_EXPORT` pronto pode alimentar o planejamento descrito em
+[`WEBSITE-PUBLICATION-PLANNING.md`](WEBSITE-PUBLICATION-PLANNING.md). Criar o
+plano não altera o pacote nem autoriza publicação.
+
+O pacote não fixa domínio, framework, diretório, rota ou build do site. O perfil
+v2 planeja para `andrestudio.dev.br`; DuckDNS é apenas histórico técnico.
