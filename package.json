@@ -72,6 +72,16 @@
     ,"publication:reconcile:list": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/publication-reconciliation-cli.ts list"
     ,"demo:publication-reconciliation": "node apps/sistemandrestudio-api/src/demo-publication-reconciliation.ts"
     ,"demo:publication-reconciliation:postgres": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/demo-publication-reconciliation-postgres.ts"
+    ,"orchestration:start": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/orchestration-cli.ts start"
+    ,"orchestration:show": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/orchestration-cli.ts show"
+    ,"orchestration:list": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/orchestration-cli.ts list"
+    ,"orchestration:pending-decisions": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/orchestration-cli.ts pending-decisions"
+    ,"orchestration:resume": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/orchestration-cli.ts resume"
+    ,"orchestration:cancel": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/orchestration-cli.ts cancel"
+    ,"orchestration:decision": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/orchestration-cli.ts decision"
+    ,"orchestration:serve": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/orchestration-server.ts"
+    ,"demo:editorial-orchestration": "node apps/sistemandrestudio-api/src/demo-editorial-orchestration.ts"
+    ,"demo:editorial-orchestration:postgres": "node --env-file-if-exists=.env.test apps/sistemandrestudio-api/src/demo-editorial-orchestration-postgres.ts"
   },
   "engines": {
     "node": ">=24.0.0"

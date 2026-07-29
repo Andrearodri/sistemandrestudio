@@ -301,3 +301,20 @@ Os checks de estado de `editorial_news` e `publication_packages` passam a
 aceitar `PUBLISHED`. Triggers diferidos exigem reconciliação `COMPLETED` e
 verificação `VERIFIED` ou `VERIFIED_WITH_WARNINGS`, tornando impossível
 confirmar a transição sem as provas persistidas na mesma transação.
+## Orquestração editorial — migrations 015 e 016
+
+`editorial_orchestration_runs` guarda identidade, política, trigger e estado.
+`editorial_orchestration_steps` guarda checkpoints e referências limitadas.
+`editorial_human_decision_requests` e `editorial_human_decisions` garantem uma
+decisão final por draft/versão. `editorial_orchestration_attempts` registra
+retries técnicos e `editorial_orchestration_events` mantém o histórico
+operacional.
+
+Índices únicos e locks transacionais impedem runs, requests, decisões, steps e
+tentativas concorrentes duplicados. Tokens e conteúdo integral não fazem parte
+do modelo.
+
+A migration `016_editorial_orchestration_integrity.sql` é incremental e torna
+obrigatória uma lista não vazia de instruções para `REQUEST_CHANGES`, inclusive
+contra gravações SQL diretas. A migration `015` permanece imutável após sua
+primeira aplicação.

@@ -190,24 +190,25 @@ npm run build
 npm run demo
 ```
 
-## 12. Limitações atuais
+## 12. Limitações do núcleo original
 
 - o score e a verificação são entradas de fixture, não algoritmos completos;
 - o adaptador em memória perde os dados ao encerrar o processo;
 - o adaptador PostgreSQL fornece transação e concorrência otimista;
-- não há autenticação real;
-- não há API HTTP;
-- não há fila, timeout ou retry de orquestração;
-- não há RSS, n8n, Telegram ou LLM;
+- a API interna posterior autentica o transporte, mas não substitui uma
+  política completa de identidade e autorização;
+- a orquestração posterior adiciona timeout e retry manual apenas para falhas
+  transitórias;
+- há radar RSS/Atom, templates n8n e canal Telegram opcional, mas não há LLM;
 - não há publicação.
 
 ## 13. Evolução futura
 
-1. adicionar políticas determinísticas de classificação e verificação;
-2. mapear workflows n8n para comandos explícitos;
-3. mapear callbacks autenticados do Telegram para decisões humanas;
-4. ligar um adaptador de LLM somente ao comando `CreateDraft`;
-5. manter a máquina independente de todas essas integrações.
+1. ativar n8n e Telegram somente em ambiente autorizado;
+2. ligar o pipeline operacional completo aos passos já persistidos;
+3. ligar um adaptador de LLM somente ao comando `CreateDraft`;
+4. manter a máquina independente de todas essas integrações;
+5. preservar aprovação humana obrigatória antes de qualquer publicação.
 # Etapa 10
 
 O serviço de rascunho usa somente as transições já existentes:
@@ -232,3 +233,17 @@ da versão atual, origem `MANUAL_SUPERVISED_DEPLOY`, verificação pública
 `PUBLISHED` é terminal. A transição é persistida pelo adaptador transacional de
 reconciliação e protegida também por constraints do PostgreSQL; não significa
 que a máquina de estados executou o deploy.
+## Estado da orquestração
+
+A máquina da run é separada do agregado editorial:
+
+```text
+CREATED → RUNNING → WAITING_HUMAN_DECISION
+WAITING_HUMAN_DECISION → COMPLETED | COMPLETED_WITH_WARNINGS
+RUNNING → FAILED
+estado não concluído → CANCELLED
+```
+
+O draft continua obedecendo à máquina editorial existente. A orquestração não
+cria transições alternativas e não transforma timeout, LLM ou falha técnica em
+aprovação.

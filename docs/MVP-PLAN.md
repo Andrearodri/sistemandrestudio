@@ -597,3 +597,13 @@ Etapa 12.7: reconciliação auditável de uma publicação manual externa. O sis
 verifica o estado público e pode avançar um pacote íntegro para `PUBLISHED`,
 registrando `MANUAL_SUPERVISED_DEPLOY`; não executa deploy, upload ou correção
 remota. A publicação automática continua fora do escopo.
+## Etapa 13.1 — orquestração supervisionada
+
+A camada inicial de n8n e decisão humana usa política versionada, runs
+persistidas, checkpoints retomáveis, canal Console padrão e Telegram opcional.
+O modo operacional atual é `DRY_RUN_ORCHESTRATION`: até três itens já
+persistidos e no máximo um request. A ativação de agenda, credenciais reais,
+webhook público e ligação completa dos executores exige revisão futura.
+
+Publicação em website, LinkedIn, Instagram, GitHub e CRM permanece fora do
+escopo.

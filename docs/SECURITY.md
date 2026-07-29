@@ -316,3 +316,14 @@ DuckDNS é somente metadado legado. Isso não autoriza alteração de zona,
 certificado, redirecionamento, Nginx ou acesso ao servidor. Campos operacionais
 desconhecidos usam `UNKNOWN`, e as operações locais dependem de inspeção do
 target.
+## Limite de segurança da orquestração
+
+- API interna em `127.0.0.1`, com segredo obrigatório, payload de 16 KB, rate
+  limit e sem CORS público;
+- Telegram fixo em `https://api.telegram.org`, timeout e redirects bloqueados;
+- callbacks HMAC, chat e usuário autorizados, expiração e replay validados;
+- tokens, cookies e payload bruto não são persistidos nem registrados;
+- `.env.local` e demais arquivos reais permanecem ignorados;
+- workflows n8n contêm apenas referências de credenciais;
+- Console é o canal padrão;
+- não existem endpoints ou comandos de publicação.

@@ -1,0 +1,134 @@
+{
+  "name": "AndreStudio Telegram Editorial Decision v1",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "andre-studio-telegram-editorial-v1",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": false
+        }
+      },
+      "id": "telegram-webhook",
+      "name": "Telegram Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "CONFIGURE_IN_N8N"
+    },
+    {
+      "parameters": {
+        "jsCode": "const secret = $env.TELEGRAM_WEBHOOK_SECRET;\nconst received = $json.headers?.['x-telegram-bot-api-secret-token'];\nif (!secret || received !== secret) throw new Error('TELEGRAM_WEBHOOK_ORIGIN_INVALID');\nconst callback = $json.body?.callback_query;\nif (!callback || typeof callback.data !== 'string') throw new Error('TELEGRAM_CALLBACK_INVALID');\nreturn [{json:{callbackData:callback.data,chatId:String(callback.message?.chat?.id ?? ''),userId:String(callback.from?.id ?? ''),receivedAt:new Date().toISOString(),externalMessageReference:`telegram-update:${String($json.body?.update_id ?? '')}`}}];"
+      },
+      "id": "minimize-and-validate",
+      "name": "Validate Origin and Minimize",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.SISTEMANDRESTUDIO_INTERNAL_URL}}/internal/human-decisions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{JSON.stringify($json)}}",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "timeout": 10000
+        }
+      },
+      "id": "register-decision",
+      "name": "Register Decision in Sistema",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CONFIGURE_IN_N8N",
+          "name": "sistemandrestudio-internal-api"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{JSON.stringify({ok:$json.ok === true})}}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "respond-telegram",
+      "name": "Acknowledge Telegram",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        720,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Telegram Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Origin and Minimize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Origin and Minimize": {
+      "main": [
+        [
+          {
+            "node": "Register Decision in Sistema",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Register Decision in Sistema": {
+      "main": [
+        [
+          {
+            "node": "Acknowledge Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "none"
+  },
+  "versionId": "andre-studio-telegram-editorial-decision-v1",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

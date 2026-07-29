@@ -190,15 +190,16 @@ protegido pelo sufixo `_test`.
 A demo PostgreSQL fecha a primeira pool, abre uma segunda, repete o último
 comando e confirma replay sem novo evento.
 
-## Uso futuro
+## Integrações de orquestração
 
-- Uma API validará autenticação e converterá o corpo aceito no envelope.
-- O n8n fornecerá IDs, chave, versão e payload; não decidirá transições.
-- O Telegram converterá uma ação humana autenticada em comando de aprovação,
+- A API interna valida autenticação e converte o corpo aceito no envelope.
+- O n8n fornece IDs, chave, versão e payload; não decide transições.
+- O Telegram converte uma ação humana autenticada em comando de aprovação,
   rejeição ou alteração.
 
 Esses adaptadores devem depender do serviço, sem acessar diretamente a máquina
-ou o banco. Nenhum deles foi implementado nesta etapa.
+ou decidir diretamente no banco. Eles permanecem desativados até configuração
+e início explícitos.
 
 ## Relevância determinística
 
@@ -212,14 +213,16 @@ não existe uma transação distribuída entre dois comandos. Cada comando
 individual continua atômico. Consulte
 [`RELEVANCE-POLICY.md`](RELEVANCE-POLICY.md).
 
-## Limitações
+## Limitações da fronteira editorial original
 
 - a versão é derivada da quantidade de eventos, adequada ao agregado atual;
-- não há autorização de usuário ou política de permissões;
-- não há schema externo para transporte;
-- não há logs, métricas, timeout, retry ou fila;
+- a autenticação local da orquestração não é uma política completa de
+  identidade e permissões;
+- a orquestração possui schema próprio de transporte, sem alterar o envelope
+  editorial;
+- timeout e retry pertencem à run de orquestração, não ao comando editorial;
 - `ReceiveNews` não produz evento editorial, mas registra idempotência;
-- não há HTTP ou integração externa;
+- a fronteira editorial continua independente de HTTP e integrações;
 - o MVP não está concluído.
 # Serviço de rascunho editorial
 
@@ -244,3 +247,14 @@ histórico. Relógio, verificador, leitor e repositório são injetados. O servi
 não executa deploy, shell, SSH, upload, LLM ou correção remota. Verificação
 crítica falha antes da transação; o adaptador PostgreSQL repete as invariantes
 sob lock antes de marcar `PUBLISHED`.
+## EditorialOrchestrationService
+
+O serviço expõe `startScheduledRun`, `resumeRun`, `getRun`, `listRuns`,
+`getPendingHumanDecisions`, `registerHumanDecision`, `retryFailedStep` e
+`cancelRun`. Cada passo recebe chave idempotente derivada da run. As portas do
+pipeline delegam às regras já existentes; o serviço limita referências,
+persiste checkpoints e nunca executa publicação remota.
+
+`HumanReviewServiceDecisionExecutor` converte `APPROVE`, `REJECT` e
+`REQUEST_CHANGES` para o serviço humano existente, sempre com draft e versões
+esperadas.

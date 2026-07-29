@@ -368,3 +368,14 @@ verificação, checks, auditoria e `PUBLISHED` atomicamente.
 Essa fronteira observa um deploy externo já feito. Não contém porta de deploy,
 SSH, upload, DNS, Nginx ou restart. A origem manual é parte obrigatória da
 identidade e da auditoria.
+## Orquestração editorial supervisionada
+
+`EditorialOrchestrationService` ocupa a camada de aplicação. Ele coordena portas
+dos serviços existentes, persiste checkpoints via
+`EditorialOrchestrationRepository` e interrompe em
+`WAITING_HUMAN_DECISION`. n8n permanece fora do domínio e PostgreSQL permanece
+como fonte de verdade. Transporte Telegram implementa `HumanDecisionChannel`;
+decisões usam um executor adaptador do `HumanEditorialReviewService`.
+
+A API interna nativa Node é restrita a localhost, autenticada e sem endpoints
+de deploy. Consulte [EDITORIAL-ORCHESTRATION.md](EDITORIAL-ORCHESTRATION.md).

@@ -4,7 +4,7 @@ O núcleo local inclui revisão editorial humana auditável antes de qualquer pu
 
 Pacotes locais supervisionados podem ser preparados após aprovação explícita; consulte `docs/PUBLICATION-PACKAGES.md`. Nenhuma integração publica conteúdo remotamente.
 
-O MVP inclui um radar de fontes oficiais em modo somente leitura: feed público → normalização → deduplicação → relevância → persistência → relatório local. Veja [as fontes oficiais](docs/OFFICIAL-SOURCES.md) e a [operação do radar](docs/RADAR-OPERATIONS.md). Não há publicação, integração Telegram, LLM, n8n ou acesso a contas nesta etapa.
+O MVP inclui um radar de fontes oficiais em modo somente leitura: feed público → normalização → deduplicação → relevância → persistência → relatório local. Veja [as fontes oficiais](docs/OFFICIAL-SOURCES.md) e a [operação do radar](docs/RADAR-OPERATIONS.md). A orquestração local opcional por n8n e a decisão humana por Console ou Telegram são descritas abaixo; não há publicação automática, LLM ou acesso implícito a contas.
 
 A verificação factual determinística registra claims, evidências e resultados
 explicáveis antes de qualquer geração. Somente `CONFIRMED` avança para
@@ -35,7 +35,9 @@ conteúdo.
 > O projeto está em fase inicial. O núcleo local da máquina de estados está
 > implementado, o adaptador PostgreSQL está disponível e o serviço de aplicação
 > coordena os casos de uso. A relevância agora usa uma política determinística
-> versionada. Ainda não há API HTTP, integração externa ou publicação.
+> versionada. A API interna da orquestração fica restrita ao host local,
+> autenticada e desativada até ser iniciada explicitamente. Não há publicação
+> automática.
 
 ## Estado atual
 
@@ -324,3 +326,15 @@ O ciclo oficial atual pode ser validado com `npm run pipeline:official:draft`.
 Ele limita a amostra a dez itens, preserva agregados históricos e comprova
 replay sem publicação, Telegram ou LLM. Um item oficial real chegou a
 `PENDING_APPROVAL`; isso não conclui o MVP.
+
+## Orquestração editorial supervisionada
+
+A Etapa 13.1 adiciona uma camada local para n8n iniciar e retomar runs
+persistidas, com decisão humana obrigatória por Console ou Telegram. PostgreSQL
+continua sendo a fonte de verdade e não existe publicação automática.
+
+Documentação:
+
+- [orquestração editorial](docs/EDITORIAL-ORCHESTRATION.md);
+- [integração n8n](docs/N8N-INTEGRATION.md);
+- [revisão humana no Telegram](docs/TELEGRAM-HUMAN-REVIEW.md).

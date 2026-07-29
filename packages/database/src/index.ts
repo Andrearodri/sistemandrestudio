@@ -11,3 +11,5 @@ export * from "./postgres-human-editorial-review-repository.ts";
 export * from "./postgres-publication-package-repository.ts";
 export * from "./postgres-website-publication-plan-repository.ts";
 export * from "./postgres-publication-reconciliation-repository.ts";
+export * from "./postgres-editorial-orchestration-repository.ts";
+export * from "./postgres-existing-editorial-orchestration-pipeline.ts";

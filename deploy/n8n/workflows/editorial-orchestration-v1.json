@@ -1,0 +1,232 @@
+{
+  "name": "AndreStudio Editorial Orchestration v1",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * 1-5"
+            }
+          ]
+        }
+      },
+      "id": "schedule-editorial-run",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "trigger-type",
+              "name": "triggerType",
+              "type": "string",
+              "value": "N8N_SCHEDULED"
+            },
+            {
+              "id": "trigger-key",
+              "name": "triggerKey",
+              "type": "string",
+              "value": "=editorial-run:{{$now.setZone('America/Fortaleza').toFormat('yyyy-LL-dd')}}:morning"
+            },
+            {
+              "id": "triggered-by",
+              "name": "triggeredBy",
+              "type": "string",
+              "value": "n8n-editorial-v1"
+            }
+          ]
+        }
+      },
+      "id": "build-trigger-key",
+      "name": "Build Idempotent Trigger",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.SISTEMANDRESTUDIO_INTERNAL_URL}}/internal/orchestration/runs",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{JSON.stringify({triggerType:$json.triggerType,triggerKey:$json.triggerKey,triggeredBy:$json.triggeredBy})}}",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "timeout": 15000
+        }
+      },
+      "id": "start-orchestration",
+      "name": "Start Orchestration",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CONFIGURE_IN_N8N",
+          "name": "sistemandrestudio-internal-api"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "waiting-human",
+              "leftValue": "={{$json.result.run.status}}",
+              "rightValue": "WAITING_HUMAN_DECISION",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "waiting-human-decision",
+      "name": "Waiting Human Decision?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        700,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "summary-waiting",
+              "name": "operationalSummary",
+              "type": "string",
+              "value": "=Run {{$json.result.run.id}} aguarda decisão humana. Uma nova execução será iniciada pelo evento de decisão."
+            }
+          ]
+        }
+      },
+      "id": "finish-waiting",
+      "name": "Finish Without Loop",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        940,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "summary-final",
+              "name": "operationalSummary",
+              "type": "string",
+              "value": "=Run {{$json.result.run.id}} terminou com status {{$json.result.run.status}}."
+            }
+          ]
+        }
+      },
+      "id": "finish-terminal",
+      "name": "Record Operational Summary",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        940,
+        100
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Build Idempotent Trigger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Idempotent Trigger": {
+      "main": [
+        [
+          {
+            "node": "Start Orchestration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start Orchestration": {
+      "main": [
+        [
+          {
+            "node": "Waiting Human Decision?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Waiting Human Decision?": {
+      "main": [
+        [
+          {
+            "node": "Finish Without Loop",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Record Operational Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "none"
+  },
+  "versionId": "andre-studio-editorial-orchestration-v1",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}
