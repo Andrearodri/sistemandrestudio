@@ -14,4 +14,5 @@ export * from "./website-publication-planning-service.ts";
 export * from "./publication-reconciliation-service.ts";
 export * from "./public-publication-verifier.ts";
 export * from "./editorial-orchestration-service.ts";
+export * from "./editorial-read-service.ts";
 export * from "./result.ts";

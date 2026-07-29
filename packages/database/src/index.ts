@@ -13,3 +13,4 @@ export * from "./postgres-website-publication-plan-repository.ts";
 export * from "./postgres-publication-reconciliation-repository.ts";
 export * from "./postgres-editorial-orchestration-repository.ts";
 export * from "./postgres-existing-editorial-orchestration-pipeline.ts";
+export * from "./postgres-editorial-read-repository.ts";

@@ -2,6 +2,7 @@ import {
   ConsoleHumanDecisionChannel,
   EditorialOrchestrationError,
   EditorialOrchestrationService,
+  EditorialReadService,
   HumanReviewServiceDecisionExecutor,
   TelegramHumanDecisionChannel,
   type HumanDecisionChannel,
@@ -11,6 +12,7 @@ import {
   PostgresEditorialOrchestrationRepository,
   PostgresExistingEditorialOrchestrationPipeline,
   PostgresHumanEditorialReviewRepository,
+  PostgresEditorialReadRepository,
   createDatabasePool,
   loadDatabaseConfig,
 } from "../../../packages/database/src/index.ts";
@@ -31,7 +33,10 @@ export function createOrchestrationRuntime() {
     decisionExecutor: new HumanReviewServiceDecisionExecutor(reviewService),
     clock,
   });
-  return { pool, service, channel };
+  const readService = new EditorialReadService(
+    new PostgresEditorialReadRepository(pool),
+  );
+  return { pool, service, readService, channel };
 }
 
 function configuredChannel(clock: () => string): HumanDecisionChannel {
