@@ -1,0 +1,9 @@
+name: sistemandrestudio-readonly
+version: 1.0.0
+description: One allowlisted read-only tool for the private sistemandrestudio API.
+provides_tools:
+  - sistemandrestudio_read
+requires_env:
+  - name: EDITORIAL_READ_API_SECRET
+    description: Dedicated Bearer credential limited to editorial:read.
+    secret: true

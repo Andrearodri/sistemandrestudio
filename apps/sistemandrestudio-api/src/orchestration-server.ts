@@ -219,6 +219,7 @@ async function route(
   }
   const runMatch = url.pathname.match(/^\/internal\/orchestration\/runs\/([^/]+)$/);
   if (method === "GET" && runMatch?.[1]) {
+    rejectUnexpectedParameters(url, []);
     return {
       status: 200,
       body: await runtime.service.getRun(decodeIdentifier(runMatch[1])),
@@ -235,6 +236,7 @@ async function route(
   }
   if (method === "GET" &&
     url.pathname === "/internal/orchestration/pending-decisions") {
+    rejectUnexpectedParameters(url, []);
     return {
       status: 200,
       body: await runtime.service.getPendingHumanDecisions(),
@@ -283,6 +285,8 @@ function scopeFor(method: string, pathname: string) {
   if (method === "GET" && (
     pathname === "/internal/health" ||
     pathname === "/internal/system/status" ||
+    pathname === "/internal/orchestration/pending-decisions" ||
+    /^\/internal\/orchestration\/runs\/[^/]+$/.test(pathname) ||
     pathname === "/internal/editorial/items" ||
     /^\/internal\/editorial\/items\/[^/]+(?:\/evidence)?$/.test(pathname) ||
     /^\/internal\/editorial\/drafts\/[^/]+$/.test(pathname)

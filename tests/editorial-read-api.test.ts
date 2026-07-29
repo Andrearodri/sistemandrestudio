@@ -15,6 +15,7 @@ import {
 
 const READ_SECRET = "read-secret-at-least-16-characters";
 const WRITE_SECRET = "write-secret-at-least-16-characters";
+const OPERATIONAL_SECRET = "operational-secret-at-least-16-characters";
 const servers: ReturnType<typeof createOrchestrationHttpServer>[] = [];
 
 afterEach(async () => {
@@ -55,6 +56,52 @@ describe("internal editorial read API", () => {
       assert.equal(response.headers.get("cache-control"), "no-store");
     }
     assert.equal(context.repository.mutations, 0);
+  });
+
+  test("allows editorial:read on the two read-only orchestration routes", async () => {
+    const context = await start();
+    const paths = [
+      "/internal/orchestration/pending-decisions",
+      "/internal/orchestration/runs/run-read-1",
+    ];
+    for (const path of paths) {
+      const unauthenticated = await fetch(`${context.url}${path}`);
+      assert.equal(unauthenticated.status, 401, path);
+
+      const forbidden = await request(context.url, path, WRITE_SECRET);
+      assert.equal(forbidden.status, 403, path);
+
+      const allowed = await request(context.url, path, READ_SECRET);
+      assert.equal(allowed.status, 200, path);
+
+      const operational = await request(context.url, path, OPERATIONAL_SECRET);
+      assert.equal(operational.status, 200, path);
+    }
+  });
+
+  test("keeps every mutating route forbidden to editorial:read", async () => {
+    const context = await start();
+    const attempts = [
+      ["POST", "/internal/orchestration/runs"],
+      ["POST", "/internal/orchestration/runs/run-read-1/resume"],
+      ["POST", "/internal/human-decisions"],
+      ["PUT", "/internal/orchestration/runs/run-read-1"],
+      ["PATCH", "/internal/orchestration/pending-decisions"],
+      ["DELETE", "/internal/editorial/items/news-read-1"],
+    ] as const;
+    for (const [method, path] of attempts) {
+      const response = await requestWithMethod(
+        context.url,
+        path,
+        READ_SECRET,
+        method,
+      );
+      assert.equal(response.status, 403, `${method} ${path}`);
+      assert.equal(
+        await errorCode(response),
+        "EDITORIAL_ORCHESTRATION_API_FORBIDDEN",
+      );
+    }
   });
 
   test("validates parameters strictly and enforces the maximum limit", async () => {
@@ -267,6 +314,11 @@ async function start(overrides: {
     credentials: [
       { id: "reader", secret: READ_SECRET, scopes: ["editorial:read"] },
       { id: "writer", secret: WRITE_SECRET, scopes: ["orchestration:write"] },
+      {
+        id: "operational",
+        secret: OPERATIONAL_SECRET,
+        scopes: ["orchestration:write", "editorial:read"],
+      },
     ],
     dryRun: true,
     ...(overrides.audit === undefined ? { audit: () => undefined } : {
@@ -286,7 +338,17 @@ async function start(overrides: {
 }
 
 function request(url: string, path: string, secret: string) {
+  return requestWithMethod(url, path, secret, "GET");
+}
+
+function requestWithMethod(
+  url: string,
+  path: string,
+  secret: string,
+  method: string,
+) {
   return fetch(`${url}${path}`, {
+    method,
     headers: { authorization: `Bearer ${secret}` },
   });
 }

@@ -5,6 +5,10 @@ output/
 build/
 coverage/
 *.tsbuildinfo
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
 
 # Segredos e configurações locais
 .env
