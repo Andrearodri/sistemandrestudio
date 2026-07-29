@@ -24,3 +24,10 @@ plano não altera o pacote nem autoriza publicação.
 
 O pacote não fixa domínio, framework, diretório, rota ou build do site. O perfil
 v2 planeja para `andrestudio.dev.br`; DuckDNS é apenas histórico técnico.
+
+Depois de uma publicação manual supervisionada, um pacote `WEBSITE_EXPORT`
+pode ser reconciliado pelo fluxo descrito em
+[`PUBLICATION-RECONCILIATION.md`](PUBLICATION-RECONCILIATION.md). Somente
+verificação pública bem-sucedida permite `PUBLISHED`; arquivos, hashes,
+manifesto, draft e aprovação permanecem imutáveis. A reconciliação registra o
+fato externo e nunca afirma que o sistema fez deploy.

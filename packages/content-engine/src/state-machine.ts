@@ -40,7 +40,8 @@ export const ALLOWED_TRANSITIONS = {
   CHANGES_REQUESTED: ["DRAFT_CREATED"],
   APPROVED: ["READY_FOR_PUBLICATION"],
   REJECTED: [],
-  READY_FOR_PUBLICATION: [],
+  READY_FOR_PUBLICATION: ["PUBLISHED"],
+  PUBLISHED: [],
 } as const satisfies Record<EditorialState, readonly EditorialState[]>;
 
 const statesRequiringRelevance = new Set<EditorialState>([
@@ -55,6 +56,7 @@ const statesRequiringRelevance = new Set<EditorialState>([
   "APPROVED",
   "REJECTED",
   "READY_FOR_PUBLICATION",
+  "PUBLISHED",
 ]);
 
 const statesRequiringVerifiedResult = new Set<EditorialState>([
@@ -65,6 +67,7 @@ const statesRequiringVerifiedResult = new Set<EditorialState>([
   "APPROVED",
   "REJECTED",
   "READY_FOR_PUBLICATION",
+  "PUBLISHED",
 ]);
 
 const statesRequiringDraft = new Set<EditorialState>([
@@ -74,6 +77,7 @@ const statesRequiringDraft = new Set<EditorialState>([
   "APPROVED",
   "REJECTED",
   "READY_FOR_PUBLICATION",
+  "PUBLISHED",
 ]);
 
 const statesRequiringApprovalRequest = new Set<EditorialState>([
@@ -82,6 +86,7 @@ const statesRequiringApprovalRequest = new Set<EditorialState>([
   "APPROVED",
   "REJECTED",
   "READY_FOR_PUBLICATION",
+  "PUBLISHED",
 ]);
 
 export function canTransition(
@@ -815,6 +820,7 @@ function validateApprovalRequests(
     CHANGES_REQUESTED: "CHANGES_REQUESTED",
     PENDING_APPROVAL: "PENDING",
     READY_FOR_PUBLICATION: "APPROVED",
+    PUBLISHED: "APPROVED",
     REJECTED: "REJECTED",
   };
   const expectedStatus = expectedStatusByState[entity.state];
@@ -834,7 +840,10 @@ function validateReadyForPublication(
   entity: EditorialNews,
   issues: ValidationIssue[],
 ): void {
-  if (entity.state !== "READY_FOR_PUBLICATION") {
+  if (
+    entity.state !== "READY_FOR_PUBLICATION" &&
+    entity.state !== "PUBLISHED"
+  ) {
     return;
   }
 

@@ -102,7 +102,8 @@ describe("editorial state machine", () => {
       CHANGES_REQUESTED: ["DRAFT_CREATED"],
       APPROVED: ["READY_FOR_PUBLICATION"],
       REJECTED: [],
-      READY_FOR_PUBLICATION: [],
+      READY_FOR_PUBLICATION: ["PUBLISHED"],
+      PUBLISHED: [],
     };
 
     assert.deepEqual(ALLOWED_TRANSITIONS, expected);

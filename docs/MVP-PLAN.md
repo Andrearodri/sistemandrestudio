@@ -592,3 +592,8 @@ Nenhum deploy, upload, restart, acesso remoto ou publicação foi autorizado.
 Correção 12.4.1: `andrestudio.dev.br` é o domínio canônico de planejamento;
 DuckDNS é legado. DNS, propagação, HTTPS e redirecionamento continuam pendentes,
 e nenhuma estrutura de site é presumida antes de inspeção.
+
+Etapa 12.7: reconciliação auditável de uma publicação manual externa. O sistema
+verifica o estado público e pode avançar um pacote íntegro para `PUBLISHED`,
+registrando `MANUAL_SUPERVISED_DEPLOY`; não executa deploy, upload ou correção
+remota. A publicação automática continua fora do escopo.

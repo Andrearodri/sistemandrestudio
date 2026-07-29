@@ -72,7 +72,9 @@ Caminho do repositório, estrutura, build, deploy, restart, rollback e rota
 precisam ser confirmados pelo proprietário. Mesmo após isso, publicação `LIVE`
 exigirá implementação e autorização separadas.
 
-DNS do Registro.br, propagação e HTTPS ainda não foram verificados. A rota
+Na Etapa 12.4, DNS do Registro.br, propagação e HTTPS ainda não tinham sido
+verificados. A Etapa 12.7 passou a observá-los separadamente em modo somente
+leitura, sem alterar o caráter `DRY_RUN` deste plano. A rota
 `https://andrestudio.dev.br/noticias/<slug>` é somente sugestão e recebe
 `PROVISIONAL_PUBLIC_URL` e `ROUTE_PATTERN_UNCONFIRMED`. Um possível
 redirecionamento do domínio técnico legado deverá ser planejado futuramente;

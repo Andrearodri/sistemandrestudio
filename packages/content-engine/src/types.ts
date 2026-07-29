@@ -20,6 +20,7 @@ export const EDITORIAL_STATES = [
   "APPROVED",
   "REJECTED",
   "READY_FOR_PUBLICATION",
+  "PUBLISHED",
 ] as const;
 
 export type EditorialState = (typeof EDITORIAL_STATES)[number];
@@ -29,7 +30,7 @@ export const TERMINAL_STATES = [
   "DISCARDED_LOW_RELEVANCE",
   "VERIFICATION_REJECTED",
   "REJECTED",
-  "READY_FOR_PUBLICATION",
+  "PUBLISHED",
 ] as const satisfies readonly EditorialState[];
 
 export type TerminalState = (typeof TERMINAL_STATES)[number];

@@ -5,7 +5,7 @@ import type {EditorialCitation,EditorialDraft,EditorialWarning} from "../../cont
 
 export const PUBLICATION_PACKAGE_POLICY={id:"andre-studio-publication-package",version:"andre-studio-publication-package-v1"} as const;
 export type PublicationDestination="LINKEDIN_EXPORT"|"WEBSITE_EXPORT";
-export type PublicationPackageStatus="CREATED"|"VALIDATED"|"EXPORTED"|"READY_FOR_PUBLICATION"|"FAILED";
+export type PublicationPackageStatus="CREATED"|"VALIDATED"|"EXPORTED"|"READY_FOR_PUBLICATION"|"PUBLISHED"|"FAILED";
 export interface PublicationPackage {publicationId:string;newsId:string;newsVersion:number;draftId:string;draftVersion:number;draftFormat:string;approvalDecisionId:string;reviewerId:string;approvedAt:string;destination:PublicationDestination;policyId:string;policyVersion:string;title:string;subtitle?:string;body:string;slug?:string;citations:readonly EditorialCitation[];warnings:readonly EditorialWarning[];contentHash:string;functionalFingerprint:string;status:PublicationPackageStatus;createdAt:string}
 export interface PublicationContext {newsId:string;newsVersion:number;newsState:string;draft:EditorialDraft;draftVersion:number;approvalDecisionId:string;reviewerId:string;approvedAt:string}
 export interface PublicationFile {role:"CONTENT_MARKDOWN"|"CONTENT_JSON"|"MANIFEST";relativePath:string;content:string;contentHash:string;sizeBytes:number}

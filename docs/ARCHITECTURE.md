@@ -356,3 +356,15 @@ remotas; plataforma, build, deploy, restart e rollback não são inferidos.
 O target é versionado separadamente da política. A versão v2 troca o domínio
 canônico para `andrestudio.dev.br` e representa estratégia, diretórios, rota e
 build como `UNKNOWN`; planos v1 com DuckDNS permanecem históricos.
+
+## Reconciliação pública
+
+Aplicação → leitor do pacote local → cliente HTTP público seguro → política de
+verificação → porta de reconciliação → PostgreSQL. Rede ocorre antes da
+transação; somente checks e fingerprints limitados entram no banco. O adaptador
+revalida pacote, draft, aprovação e estado sob lock e grava reconciliação,
+verificação, checks, auditoria e `PUBLISHED` atomicamente.
+
+Essa fronteira observa um deploy externo já feito. Não contém porta de deploy,
+SSH, upload, DNS, Nginx ou restart. A origem manual é parte obrigatória da
+identidade e da auditoria.

@@ -287,3 +287,17 @@ evidência e página, preservando o histórico.
 `website_publication_plans`, `website_publication_plan_operations` e
 `website_publication_plan_prerequisites` armazenam o plano `DRY_RUN`, identidade,
 fingerprint, estados e requisitos operacionais. Não duplicam o corpo editorial.
+
+## Reconciliação pública
+
+A migration 014 acrescenta `publication_reconciliations`,
+`publication_public_verifications` e `publication_verification_checks`.
+Reconciliação é única por pacote; verificação é única por reconciliação; checks
+são ordenados e únicos por código. URLs devem ser HTTPS, fingerprints têm
+SHA-256, warnings são arrays JSON e metadados de check são objetos limitados
+pelo serviço.
+
+Os checks de estado de `editorial_news` e `publication_packages` passam a
+aceitar `PUBLISHED`. Triggers diferidos exigem reconciliação `COMPLETED` e
+verificação `VERIFIED` ou `VERIFIED_WITH_WARNINGS`, tornando impossível
+confirmar a transição sem as provas persistidas na mesma transação.

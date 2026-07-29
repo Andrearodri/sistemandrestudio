@@ -218,7 +218,17 @@ automática.
 
 O estado físico legado `CHANGES_REQUESTED` corresponde semanticamente a `REVISION_REQUESTED`. Somente `PENDING_APPROVAL` aceita aprovação, rejeição ou solicitação de revisão; uma versão revisada volta obrigatoriamente por `DRAFT_CREATED` e `PENDING_APPROVAL`.
 
-`APPROVED → READY_FOR_PUBLICATION` ocorre somente após exportação local validada e manifesto persistido. Não existe estado `PUBLISHED`.
+`APPROVED → READY_FOR_PUBLICATION` ocorre somente após exportação local
+validada e manifesto persistido.
 
 O plano de website não cria transição editorial. `READY_FOR_PUBLICATION`
 permanece inalterado; `DRY_RUN_COMPLETED` pertence somente ao agregado do plano.
+
+## Reconciliação externa
+
+`READY_FOR_PUBLICATION → PUBLISHED` exige pacote de website íntegro, aprovação
+da versão atual, origem `MANUAL_SUPERVISED_DEPLOY`, verificação pública
+`VERIFIED` ou `VERIFIED_WITH_WARNINGS` e reconciliação `COMPLETED`.
+`PUBLISHED` é terminal. A transição é persistida pelo adaptador transacional de
+reconciliação e protegida também por constraints do PostgreSQL; não significa
+que a máquina de estados executou o deploy.

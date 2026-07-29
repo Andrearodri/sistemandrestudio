@@ -296,9 +296,21 @@ Consulte [`docs/WEBSITE-PUBLICATION-PLANNING.md`](docs/WEBSITE-PUBLICATION-PLANN
 
 O perfil v2 usa `https://andrestudio.dev.br` como domínio canônico de
 planejamento. DuckDNS permanece apenas como referência técnica legada. A
-estrutura do site, estratégia, diretórios, rota, build e restart são `UNKNOWN`;
-DNS, propagação e HTTPS continuam pendentes e nenhuma alteração externa foi
-executada.
+estrutura do site, estratégia, diretórios, rota, build e restart continuaram
+`UNKNOWN` no plano. A Etapa 12.7 verificou o domínio público e HTTPS de forma
+somente leitura; nenhuma alteração externa foi executada.
+
+## Reconciliação de publicação manual
+
+A Etapa 12.7 verifica uma publicação já executada manualmente e, quando todos
+os critérios críticos passam, reconcilia pacote e notícia de
+`READY_FOR_PUBLICATION` para `PUBLISHED`. A origem fica explicitamente
+`MANUAL_SUPERVISED_DEPLOY`; o sistema não executa deploy. Consulte
+[`docs/PUBLICATION-RECONCILIATION.md`](docs/PUBLICATION-RECONCILIATION.md).
+
+O verificador usa HTTPS, allow-list, defesa contra destinos privados, limites
+de tempo/tamanho/redirect e checks determinísticos de artigo, blog, sitemap,
+robots e dados estruturados. Replay não cria linhas ou eventos adicionais.
 
 ## Rascunhos editoriais controlados
 

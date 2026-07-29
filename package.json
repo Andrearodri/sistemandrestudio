@@ -65,6 +65,13 @@
     ,"website:inspect-local": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/website-publication-cli.ts inspect-local"
     ,"demo:website-plan": "node apps/sistemandrestudio-api/src/demo-website-publication.ts"
     ,"demo:website-plan:postgres": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/demo-website-publication-postgres.ts"
+    ,"publication:reconcile:list-ready": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/publication-reconciliation-cli.ts list-ready"
+    ,"publication:verify-public": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/publication-reconciliation-cli.ts verify-public"
+    ,"publication:reconcile": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/publication-reconciliation-cli.ts reconcile"
+    ,"publication:reconcile:show": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/publication-reconciliation-cli.ts show"
+    ,"publication:reconcile:list": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/publication-reconciliation-cli.ts list"
+    ,"demo:publication-reconciliation": "node apps/sistemandrestudio-api/src/demo-publication-reconciliation.ts"
+    ,"demo:publication-reconciliation:postgres": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/demo-publication-reconciliation-postgres.ts"
   },
   "engines": {
     "node": ">=24.0.0"

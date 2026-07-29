@@ -11,4 +11,6 @@ export * from "./official-draft-pipeline.ts";
 export * from "./human-editorial-review-service.ts";
 export * from "./publication-package-service.ts";
 export * from "./website-publication-planning-service.ts";
+export * from "./publication-reconciliation-service.ts";
+export * from "./public-publication-verifier.ts";
 export * from "./result.ts";

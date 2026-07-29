@@ -220,6 +220,20 @@ decisão incompatíveis são bloqueados também por constraints. Texto externo,
 incluindo instruções, nunca é executado. A transação integrada e os testes de
 rollback impedem resultado ou evento editorial parcial.
 
+## Reconciliação de publicação
+
+O verificador público permite somente HTTPS em `andrestudio.dev.br` e
+`www.andrestudio.dev.br`. Cada destino e redirect passa por validação de
+protocolo, credenciais, porta, host, DNS e endereço privado. GET/HEAD usam
+timeout e limites de redirects e bytes. DuckDNS não é aceito como destino ou
+canonical.
+
+HTML, XML e headers públicos são dados não confiáveis. Scripts nunca são
+executados, conteúdo bruto não é persistido e resumos observados são limitados.
+Payloads de auditoria não contêm paths remotos, credenciais ou respostas HTTP.
+`PUBLISHED` depende de constraint diferida que vê reconciliação e verificação
+na mesma transação. Replay gera zero evento; falha gera rollback.
+
 ## 16. Aquisição em páginas oficiais
 
 A Etapa 8 parte somente de URLs canônicas persistidas pelo radar e opera em
@@ -296,8 +310,9 @@ verificação pública são operações remotas explicitamente bloqueadas em
 raízes amplas, limita profundidade e quantidade, ignora `.git`, `.env`,
 `node_modules` e `dist`, e nunca executa scripts.
 
-O domínio canônico configurado para novos planos é `andrestudio.dev.br`, mas
-DNS e HTTPS ainda não foram verificados. DuckDNS é somente metadado legado.
-Isso não autoriza resolução ativa, alteração de zona, certificado,
-redirecionamento, Nginx ou acesso ao servidor. Campos operacionais desconhecidos
-usam `UNKNOWN`, e as operações locais dependem de inspeção do target.
+O domínio canônico configurado para novos planos é `andrestudio.dev.br`.
+A Etapa 12.7 verifica DNS e HTTPS somente para observar a publicação pública.
+DuckDNS é somente metadado legado. Isso não autoriza alteração de zona,
+certificado, redirecionamento, Nginx ou acesso ao servidor. Campos operacionais
+desconhecidos usam `UNKNOWN`, e as operações locais dependem de inspeção do
+target.

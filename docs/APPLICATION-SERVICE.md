@@ -237,3 +237,10 @@ Coordena listagem, pacote, decisões e revisão manual por portas, sem importar 
 exportação local e persiste plano determinístico. Também oferece consulta e uma
 inspeção local opcional, limitada e somente leitura. Não possui método de
 publicação.
+
+`PublicationReconciliationService` lista pacotes prontos, executa verificação
+pública sem efeito, reconcilia uma confirmação manual externa e consulta o
+histórico. Relógio, verificador, leitor e repositório são injetados. O serviço
+não executa deploy, shell, SSH, upload, LLM ou correção remota. Verificação
+crítica falha antes da transação; o adaptador PostgreSQL repete as invariantes
+sob lock antes de marcar `PUBLISHED`.

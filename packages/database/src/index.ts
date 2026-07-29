@@ -10,3 +10,4 @@ export * from "./postgres-editorial-draft-repository.ts";
 export * from "./postgres-human-editorial-review-repository.ts";
 export * from "./postgres-publication-package-repository.ts";
 export * from "./postgres-website-publication-plan-repository.ts";
+export * from "./postgres-publication-reconciliation-repository.ts";
