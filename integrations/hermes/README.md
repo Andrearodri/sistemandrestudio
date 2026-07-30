@@ -19,7 +19,18 @@ requisições `GET` para `http://127.0.0.1:4317`. Não existe argumento para URL
 método, headers, corpo ou host. A credencial exclusiva de leitura é obtida
 somente de `EDITORIAL_READ_API_SECRET`.
 
-Antes de qualquer uso futuro, a pasta `sistemandrestudio_read` deverá ser
-instalada pelo procedimento oficial de plugins da mesma versão fixada do
-Hermes. A ativação deve chamar `create_restricted_agent`; usar o entrypoint
-padrão do Hermes sem esse wrapper não pertence a este contrato de segurança.
+Antes de qualquer uso futuro, o diretório `integrations/hermes` completo deve
+ser instalado como
+`$HERMES_HOME/plugins/sistemandrestudio-readonly`. O manifesto `plugin.yaml`
+e o entrypoint `__init__.py` ficam diretamente nessa raiz, conforme a
+descoberta oficial do Hermes 0.19.0. A configuração privada deve habilitar
+explicitamente o plugin:
+
+```yaml
+plugins:
+  enabled:
+    - sistemandrestudio-readonly
+```
+
+A ativação deve chamar `create_restricted_agent`; usar o entrypoint padrão do
+Hermes sem esse wrapper não pertence a este contrato de segurança.
