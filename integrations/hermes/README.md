@@ -19,6 +19,15 @@ requisições `GET` para `http://127.0.0.1:4317`. Não existe argumento para URL
 método, headers, corpo ou host. A credencial exclusiva de leitura é obtida
 somente de `EDITORIAL_READ_API_SECRET`.
 
+O teste manual com modelo usa uma projeção ainda menor, definida em
+`manual_runner.py`. O schema apresentado ao modelo contém somente `operation`
+e `limit`, com enum fechado para `health`, `system_status`,
+`list_pending_decisions` e `list_editorial_items`. Cada tool call pode conter
+uma única operação; até quatro chamadas locais são validadas como lote antes
+de qualquer dispatch e executadas sequencialmente. `limit` é exclusivo da
+listagem editorial, assume 25 e não pode exceder 100. As duas chamadas futuras
+ao modelo permanecem com `parallel_tool_calls=false`, sem retry ou fallback.
+
 Antes de qualquer uso futuro, o diretório `integrations/hermes` completo deve
 ser instalado como
 `$HERMES_HOME/plugins/sistemandrestudio-readonly`. O manifesto `plugin.yaml`

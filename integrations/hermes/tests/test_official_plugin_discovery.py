@@ -50,7 +50,6 @@ class OfficialPluginDiscoveryTests(unittest.TestCase):
                 from importlib import metadata
 
                 from hermes_cli.plugins import discover_plugins, get_plugin_manager
-                from model_tools import get_tool_definitions
                 from tools.registry import registry
 
                 assert metadata.version("hermes-agent") == "0.19.0"
@@ -60,11 +59,7 @@ class OfficialPluginDiscoveryTests(unittest.TestCase):
                 assert plugin.enabled is True
 
                 registered = registry.get_tool_names_for_toolset("sistemandrestudio_readonly")
-                definitions = get_tool_definitions(
-                    enabled_toolsets=["sistemandrestudio_readonly"],
-                    disabled_toolsets=[],
-                    quiet_mode=True,
-                )
+                definitions = registry.get_definitions(set(registered), quiet=True)
                 visible = [definition["function"]["name"] for definition in definitions]
                 assert registered == ["sistemandrestudio_read"], registered
                 assert visible == ["sistemandrestudio_read"], visible
