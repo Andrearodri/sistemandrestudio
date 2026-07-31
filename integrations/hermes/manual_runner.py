@@ -75,6 +75,31 @@ class ValidatedToolCall:
     arguments: Mapping[str, Any]
 
 
+def extract_required_tool_calls(response: Any) -> Tuple[Any, ...]:
+    """Extract a mandatory tool-call collection from an OpenAI/Hermes reply.
+
+    This is intentionally separate from validation and dispatch.  It gives a
+    future runner a stable, fail-closed reason when the provider returns prose
+    instead of a tool request; prose is never interpreted as API data.
+    """
+
+    if not _is_wrapper(response):
+        _fail("INVALID_RESPONSE_WRAPPER", "The provider response wrapper is invalid.")
+    if not _has_field(response, "message"):
+        _fail("MISSING_MESSAGE", "The provider response has no message.")
+    message = _field(response, "message")
+    if not _is_wrapper(message):
+        _fail("INVALID_MESSAGE_WRAPPER", "The provider message wrapper is invalid.")
+    if not _has_field(message, "tool_calls") or _field(message, "tool_calls") is None:
+        if _field(message, "content"):
+            _fail("TEXT_WHEN_TOOL_REQUIRED", "A tool call is required; text is not accepted.")
+        _fail("NO_TOOL_CALL", "The provider did not request a tool call.")
+    tool_calls = _field(message, "tool_calls")
+    if not isinstance(tool_calls, (list, tuple)):
+        _fail("INVALID_TOOL_CALLS_TYPE", "The tool-call collection has an invalid type.")
+    return tuple(tool_calls)
+
+
 def normalize_function_call(function: Any) -> Tuple[str, Mapping[str, Any]]:
     """Normalize the Hermes/OpenAI function representation without coercion.
 
@@ -85,9 +110,15 @@ def normalize_function_call(function: Any) -> Tuple[str, Mapping[str, Any]]:
     Python literals, or JSON embedded in surrounding text.
     """
 
+    if not _is_wrapper(function):
+        _fail("MISSING_FUNCTION", "The tool call has no function wrapper.")
+    if not _has_field(function, "name"):
+        _fail("MISSING_TOOL_NAME", "The tool call has no tool name.")
     name = _field(function, "name")
     if name != TOOL_NAME:
-        _invalid_tool_call()
+        _fail("INVALID_TOOL_NAME", "The requested tool is not allowlisted.")
+    if not _has_field(function, "arguments"):
+        _fail("MISSING_ARGUMENTS", "The tool call has no arguments.")
     return name, normalize_tool_arguments(_field(function, "arguments"))
 
 
@@ -98,23 +129,14 @@ def normalize_tool_arguments(arguments: Any) -> Mapping[str, Any]:
         try:
             decoded = json.loads(arguments)
         except json.JSONDecodeError as error:
-            raise ManualRunnerContractError(
-                "MANUAL_ARGUMENTS_INVALID",
-                "Tool arguments are not valid JSON.",
-            ) from error
+            raise ManualRunnerContractError("INVALID_ARGUMENTS_JSON", "Tool arguments are not valid JSON.") from error
     elif isinstance(arguments, Mapping):
         decoded = dict(arguments)
     else:
-        raise ManualRunnerContractError(
-            "MANUAL_ARGUMENTS_INVALID",
-            "Tool arguments must be one JSON object.",
-        )
+        _fail("INVALID_ARGUMENTS_TYPE", "Tool arguments must be one JSON object.")
 
     if not isinstance(decoded, Mapping):
-        raise ManualRunnerContractError(
-            "MANUAL_ARGUMENTS_INVALID",
-            "Tool arguments must be one JSON object.",
-        )
+        _fail("INVALID_ARGUMENTS_TYPE", "Tool arguments must be one JSON object.")
     return dict(decoded)
 
 
@@ -125,12 +147,13 @@ def observe_tool_call(
     """Return safe future-runner diagnostics without retaining payload values."""
 
     function = _field(tool_call, "function")
-    raw_arguments = _field(function, "arguments")
+    raw_arguments = _field(function, "arguments") if _is_wrapper(function) else None
     payload = _payload_bytes(raw_arguments)
     keys = _argument_keys(raw_arguments)
-    name = _field(function, "name")
+    name = _field(function, "name") if _is_wrapper(function) else None
     return {
-        "tool_name": name if isinstance(name, str) else "invalid",
+        "tool_name": name if name == TOOL_NAME else None,
+        "tool_name_allowed": name == TOOL_NAME,
         "arguments_type": _arguments_type(raw_arguments),
         "argument_keys": keys,
         "payload_sha256": hashlib.sha256(payload).hexdigest(),
@@ -139,53 +162,70 @@ def observe_tool_call(
     }
 
 
+def observe_response_structure(
+    response: Any,
+    stage: str,
+    failure_code: str | None = None,
+) -> Mapping[str, Any]:
+    """Create a hashable diagnostic from shape only, never provider values."""
+
+    has_message = _has_field(response, "message")
+    message = _field(response, "message") if has_message else None
+    has_tool_calls = _is_wrapper(message) and _has_field(message, "tool_calls")
+    tool_calls = _field(message, "tool_calls") if has_tool_calls else None
+    first = tool_calls[0] if isinstance(tool_calls, (list, tuple)) and tool_calls else None
+    function = _field(first, "function") if _is_wrapper(first) else None
+    raw_arguments = _field(function, "arguments") if _is_wrapper(function) and _has_field(function, "arguments") else None
+    name = _field(function, "name") if _is_wrapper(function) else None
+    shape = {
+        "response_type": type(response).__name__,
+        "message_present": has_message,
+        "tool_calls_present": has_tool_calls,
+        "tool_calls_type": _arguments_type(tool_calls),
+        "tool_calls_count": len(tool_calls) if isinstance(tool_calls, (list, tuple)) else None,
+        "function_present": _is_wrapper(function),
+        "tool_name_allowed": name == TOOL_NAME,
+        "arguments_type": _arguments_type(raw_arguments),
+        "argument_keys": _argument_keys(raw_arguments),
+    }
+    fragment = json.dumps(shape, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return {
+        "stage": stage,
+        "failure_code": failure_code,
+        **shape,
+        "fragment_size": len(fragment),
+        "fragment_sha256": hashlib.sha256(fragment).hexdigest(),
+    }
+
+
 def validate_manual_arguments(arguments: Any) -> Mapping[str, Any]:
     """Validate and normalize one operation payload for the manual runner."""
 
     if not isinstance(arguments, Mapping):
-        raise ManualRunnerContractError(
-            "MANUAL_ARGUMENTS_INVALID",
-            "Tool arguments must be one JSON object.",
-        )
+        _fail("INVALID_ARGUMENTS_TYPE", "Tool arguments must be one JSON object.")
     keys = set(arguments)
     if "operations" in keys or isinstance(arguments.get("operation"), (list, tuple)):
-        raise ManualRunnerContractError(
-            "MANUAL_MULTIPLE_OPERATIONS",
-            "Only one operation may be requested per tool call.",
-        )
+        _fail("MULTIPLE_OPERATIONS", "Only one operation may be requested per tool call.")
     operation = arguments.get("operation")
+    if operation is None:
+        _fail("MISSING_OPERATION", "The tool call has no operation.")
     if operation not in MANUAL_ALLOWED_OPERATIONS:
-        raise ManualRunnerContractError(
-            "MANUAL_OPERATION_FORBIDDEN",
-            "The requested operation is not allowed by the manual runner.",
-        )
+        _fail("UNAUTHORIZED_OPERATION", "The requested operation is not allowlisted.")
 
     allowed_keys = {"operation", "limit"} if operation == "list_editorial_items" else {"operation"}
     if keys != {"operation"} and not keys.issubset(allowed_keys):
-        raise ManualRunnerContractError(
-            "MANUAL_ARGUMENTS_INVALID",
-            "The tool call contains unknown or irrelevant arguments.",
-        )
+        _fail("INVALID_ARGUMENT_KEYS", "The tool call contains unknown or irrelevant arguments.")
 
     if operation != "list_editorial_items":
         if keys != {"operation"}:
-            raise ManualRunnerContractError(
-                "MANUAL_ARGUMENTS_INVALID",
-                "Only list_editorial_items accepts a limit.",
-            )
+            _fail("INVALID_ARGUMENT_KEYS", "Only list_editorial_items accepts a limit.")
         return {"operation": operation}
 
     limit = arguments.get("limit", DEFAULT_LIST_LIMIT)
     if isinstance(limit, bool) or not isinstance(limit, int):
-        raise ManualRunnerContractError(
-            "MANUAL_ARGUMENTS_INVALID",
-            "The list limit must be an integer.",
-        )
+        _fail("INVALID_LIMIT", "The list limit must be an integer.")
     if limit < 1 or limit > MAX_LIST_LIMIT:
-        raise ManualRunnerContractError(
-            "MANUAL_ARGUMENTS_INVALID",
-            "The list limit is outside the allowed range.",
-        )
+        _fail("INVALID_LIMIT", "The list limit is outside the allowed range.")
     return {"operation": operation, "limit": limit}
 
 
@@ -194,31 +234,26 @@ def validate_model_tool_calls(
 ) -> Tuple[ValidatedToolCall, ...]:
     """Validate all model tool calls before allowing any local execution."""
 
-    if not isinstance(tool_calls, Sequence) or isinstance(tool_calls, (str, bytes)):
-        raise ManualRunnerContractError(
-            "MANUAL_TOOL_CALLS_INVALID",
-            "The model returned an invalid tool-call collection.",
-        )
+    if not isinstance(tool_calls, (list, tuple)):
+        _fail("INVALID_TOOL_CALLS_TYPE", "The tool-call collection has an invalid type.")
     if not 1 <= len(tool_calls) <= MAX_LOCAL_TOOL_CALLS:
-        raise ManualRunnerContractError(
-            "MANUAL_TOOL_CALL_COUNT",
-            "The model may request between one and four local tool calls.",
-        )
+        _fail("INVALID_TOOL_CALL_COUNT", "The model may request between one and four local tool calls.")
 
     validated = []
     seen_operations = set()
     for tool_call in tool_calls:
+        if not _is_wrapper(tool_call):
+            _fail("UNRECOGNIZED_WRAPPER", "The tool-call wrapper is invalid.")
         call_id = _field(tool_call, "id") or _field(tool_call, "call_id")
         if not isinstance(call_id, str) or not call_id:
-            _invalid_tool_call()
+            _fail("MISSING_TOOL_CALL_ID", "The tool call has no identifier.")
+        if not _has_field(tool_call, "function"):
+            _fail("MISSING_FUNCTION", "The tool call has no function.")
         _, parsed = normalize_function_call(_field(tool_call, "function"))
         normalized = validate_manual_arguments(parsed)
         operation = normalized["operation"]
         if operation in seen_operations:
-            raise ManualRunnerContractError(
-                "MANUAL_DUPLICATE_OPERATION",
-                "Each operation may be requested at most once.",
-            )
+            _fail("DUPLICATE_OPERATION", "Each operation may be requested at most once.")
         seen_operations.add(operation)
         validated.append(ValidatedToolCall(call_id, normalized))
     return tuple(validated)
@@ -252,17 +287,24 @@ def model_request_options() -> Mapping[str, Any]:
     }
 
 
-def _invalid_tool_call() -> None:
-    raise ManualRunnerContractError(
-        "MANUAL_TOOL_CALL_INVALID",
-        "The model returned an invalid or unauthorized tool call.",
-    )
+def _fail(code: str, message: str) -> None:
+    raise ManualRunnerContractError(code, message)
 
 
 def _field(value: Any, name: str) -> Any:
     if isinstance(value, Mapping):
         return value.get(name)
     return getattr(value, name, None)
+
+
+def _has_field(value: Any, name: str) -> bool:
+    if isinstance(value, Mapping):
+        return name in value
+    return hasattr(value, name)
+
+
+def _is_wrapper(value: Any) -> bool:
+    return isinstance(value, Mapping) or hasattr(value, "__dict__")
 
 
 def _arguments_type(value: Any) -> str:

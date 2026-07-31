@@ -12,9 +12,11 @@ from integrations.hermes.manual_runner import (
     MAX_MODEL_CALLS,
     ManualRunnerContractError,
     execute_local_tool_calls,
+    extract_required_tool_calls,
     model_request_options,
     normalize_function_call,
     observe_tool_call,
+    observe_response_structure,
     validate_manual_arguments,
     validate_model_tool_calls,
 )
@@ -191,7 +193,7 @@ class ManualRunnerExecutionTests(unittest.TestCase):
             validate_model_tool_calls(
                 [tool_call({"operations": ["health", "system_status"]})]
             )
-        self.assertEqual(raised.exception.code, "MANUAL_MULTIPLE_OPERATIONS")
+        self.assertEqual(raised.exception.code, "MULTIPLE_OPERATIONS")
         self.assertIn("one operation", raised.exception.message)
 
     def test_missing_unknown_extra_and_duplicate_calls_are_rejected(self) -> None:
@@ -241,6 +243,74 @@ class ManualRunnerExecutionTests(unittest.TestCase):
         self.assertTrue(observed_attempt["arguments_were_valid_json"])
         self.assertFalse(observed_attempt["matched_forced_system_status"])
         self.assertFalse(observed_attempt["raw_arguments_retained"])
+
+
+class ManualRunnerDiagnosticsTests(unittest.TestCase):
+    def response(self, message: object) -> dict:
+        return {"message": message}
+
+    def test_response_extraction_has_distinct_failures(self) -> None:
+        cases = {
+            "INVALID_RESPONSE_WRAPPER": None,
+            "MISSING_MESSAGE": {},
+            "INVALID_MESSAGE_WRAPPER": {"message": None},
+            "NO_TOOL_CALL": self.response({}),
+            "TEXT_WHEN_TOOL_REQUIRED": self.response({"content": "secret-fixture-value"}),
+            "INVALID_TOOL_CALLS_TYPE": self.response({"tool_calls": {}}),
+        }
+        for expected, response in cases.items():
+            with self.subTest(expected=expected):
+                with self.assertRaises(ManualRunnerContractError) as raised:
+                    extract_required_tool_calls(response)
+                self.assertEqual(raised.exception.code, expected)
+
+    def test_list_tuple_dict_and_official_wrappers_normalize_equally(self) -> None:
+        call = tool_call({"operation": "health"})
+        for calls in ([call], (call,)):
+            with self.subTest(calls_type=type(calls).__name__):
+                self.assertEqual(validate_model_tool_calls(calls)[0].arguments, {"operation": "health"})
+        wrapper = SimpleNamespace(message=SimpleNamespace(tool_calls=[call], content=None))
+        self.assertEqual(extract_required_tool_calls(wrapper), (call,))
+
+    def test_every_contract_boundary_has_a_stable_code(self) -> None:
+        cases = {
+            "MISSING_FUNCTION": [{"id": "c"}],
+            "MISSING_TOOL_NAME": [{"id": "c", "function": {"arguments": "{}"}}],
+            "INVALID_TOOL_NAME": [{"id": "c", "function": {"name": "unknown-fixture", "arguments": "{}"}}],
+            "MISSING_ARGUMENTS": [{"id": "c", "function": {"name": TOOL_NAME}}],
+            "INVALID_ARGUMENTS_TYPE": [{"id": "c", "function": {"name": TOOL_NAME, "arguments": []}}],
+            "INVALID_ARGUMENTS_JSON": [{"id": "c", "function": {"name": TOOL_NAME, "arguments": "{"}}],
+            "INVALID_ARGUMENT_KEYS": [tool_call({"operation": "health", "extra": "fixture-secret"})],
+            "MISSING_OPERATION": [tool_call({})],
+            "UNAUTHORIZED_OPERATION": [tool_call({"operation": "forbidden"})],
+            "INVALID_LIMIT": [tool_call({"operation": "list_editorial_items", "limit": 101})],
+            "MULTIPLE_OPERATIONS": [tool_call({"operations": ["health"]})],
+        }
+        for expected, calls in cases.items():
+            with self.subTest(expected=expected):
+                with self.assertRaises(ManualRunnerContractError) as raised:
+                    validate_model_tool_calls(calls)
+                self.assertEqual(raised.exception.code, expected)
+
+    def test_sanitized_response_diagnostic_never_keeps_fixture_values(self) -> None:
+        fixture_secret = "openrouter-secret-fixture"
+        response = self.response({
+            "content": fixture_secret,
+            "tool_calls": [{"id": "c", "function": {"name": "unknown-tool", "arguments": '{"operation":"health","token":"' + fixture_secret + '"}'}}],
+        })
+        observation = observe_response_structure(response, "provider_response", "INVALID_TOOL_NAME")
+        rendered = json.dumps(observation)
+        self.assertEqual(observation["tool_name_allowed"], False)
+        self.assertNotIn("unknown-tool", rendered)
+        self.assertNotIn(fixture_secret, rendered)
+        self.assertEqual(observation["argument_keys"], ["operation", "token"])
+        self.assertEqual(len(observation["fragment_sha256"]), 64)
+
+    def test_no_fixture_dispatches_a_tool(self) -> None:
+        dispatched = []
+        with self.assertRaises(ManualRunnerContractError):
+            validate_model_tool_calls([tool_call({"operation": "forbidden"})])
+        self.assertEqual(dispatched, [])
 
 
 if __name__ == "__main__":
