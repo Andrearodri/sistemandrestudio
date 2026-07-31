@@ -7,6 +7,7 @@ validates every requested tool call before any local dispatch occurs.
 
 from __future__ import annotations
 
+import hashlib
 import json
 from dataclasses import dataclass
 from typing import Any, Callable, Mapping, Sequence, Tuple
@@ -72,6 +73,70 @@ class ManualRunnerContractError(RuntimeError):
 class ValidatedToolCall:
     call_id: str
     arguments: Mapping[str, Any]
+
+
+def normalize_function_call(function: Any) -> Tuple[str, Mapping[str, Any]]:
+    """Normalize the Hermes/OpenAI function representation without coercion.
+
+    Hermes 0.19.0 receives an OpenAI-compatible ``function`` object and, in
+    its conversation loop, accepts either JSON text or an already decoded
+    mapping in ``function.arguments``.  The manual runner mirrors only that
+    narrow representation.  It deliberately does not parse Markdown, YAML,
+    Python literals, or JSON embedded in surrounding text.
+    """
+
+    name = _field(function, "name")
+    if name != TOOL_NAME:
+        _invalid_tool_call()
+    return name, normalize_tool_arguments(_field(function, "arguments"))
+
+
+def normalize_tool_arguments(arguments: Any) -> Mapping[str, Any]:
+    """Accept one JSON object or one already-decoded mapping, fail closed."""
+
+    if isinstance(arguments, str):
+        try:
+            decoded = json.loads(arguments)
+        except json.JSONDecodeError as error:
+            raise ManualRunnerContractError(
+                "MANUAL_ARGUMENTS_INVALID",
+                "Tool arguments are not valid JSON.",
+            ) from error
+    elif isinstance(arguments, Mapping):
+        decoded = dict(arguments)
+    else:
+        raise ManualRunnerContractError(
+            "MANUAL_ARGUMENTS_INVALID",
+            "Tool arguments must be one JSON object.",
+        )
+
+    if not isinstance(decoded, Mapping):
+        raise ManualRunnerContractError(
+            "MANUAL_ARGUMENTS_INVALID",
+            "Tool arguments must be one JSON object.",
+        )
+    return dict(decoded)
+
+
+def observe_tool_call(
+    tool_call: Any,
+    validation: str,
+) -> Mapping[str, Any]:
+    """Return safe future-runner diagnostics without retaining payload values."""
+
+    function = _field(tool_call, "function")
+    raw_arguments = _field(function, "arguments")
+    payload = _payload_bytes(raw_arguments)
+    keys = _argument_keys(raw_arguments)
+    name = _field(function, "name")
+    return {
+        "tool_name": name if isinstance(name, str) else "invalid",
+        "arguments_type": _arguments_type(raw_arguments),
+        "argument_keys": keys,
+        "payload_sha256": hashlib.sha256(payload).hexdigest(),
+        "payload_size": len(payload),
+        "validation": validation,
+    }
 
 
 def validate_manual_arguments(arguments: Any) -> Mapping[str, Any]:
@@ -143,27 +208,10 @@ def validate_model_tool_calls(
     validated = []
     seen_operations = set()
     for tool_call in tool_calls:
-        if not isinstance(tool_call, Mapping):
+        call_id = _field(tool_call, "id") or _field(tool_call, "call_id")
+        if not isinstance(call_id, str) or not call_id:
             _invalid_tool_call()
-        call_id = tool_call.get("id")
-        function = tool_call.get("function")
-        if (
-            not isinstance(call_id, str)
-            or not call_id
-            or not isinstance(function, Mapping)
-            or function.get("name") != TOOL_NAME
-        ):
-            _invalid_tool_call()
-        raw_arguments = function.get("arguments")
-        if not isinstance(raw_arguments, str):
-            _invalid_tool_call()
-        try:
-            parsed = json.loads(raw_arguments)
-        except json.JSONDecodeError as error:
-            raise ManualRunnerContractError(
-                "MANUAL_ARGUMENTS_INVALID",
-                "Tool arguments are not valid JSON.",
-            ) from error
+        _, parsed = normalize_function_call(_field(tool_call, "function"))
         normalized = validate_manual_arguments(parsed)
         operation = normalized["operation"]
         if operation in seen_operations:
@@ -209,3 +257,39 @@ def _invalid_tool_call() -> None:
         "MANUAL_TOOL_CALL_INVALID",
         "The model returned an invalid or unauthorized tool call.",
     )
+
+
+def _field(value: Any, name: str) -> Any:
+    if isinstance(value, Mapping):
+        return value.get(name)
+    return getattr(value, name, None)
+
+
+def _arguments_type(value: Any) -> str:
+    if isinstance(value, str):
+        return "str"
+    if isinstance(value, Mapping):
+        return "object"
+    return type(value).__name__
+
+
+def _payload_bytes(value: Any) -> bytes:
+    if isinstance(value, str):
+        return value.encode("utf-8", errors="surrogatepass")
+    if isinstance(value, Mapping):
+        return json.dumps(
+            dict(value), sort_keys=True, separators=(",", ":"), ensure_ascii=False
+        ).encode("utf-8")
+    return repr(value).encode("utf-8", errors="backslashreplace")
+
+
+def _argument_keys(value: Any) -> list[str]:
+    candidate = value
+    if isinstance(value, str):
+        try:
+            candidate = json.loads(value)
+        except json.JSONDecodeError:
+            return []
+    if not isinstance(candidate, Mapping):
+        return []
+    return sorted(key for key in candidate if isinstance(key, str))

@@ -28,6 +28,14 @@ de qualquer dispatch e executadas sequencialmente. `limit` é exclusivo da
 listagem editorial, assume 25 e não pode exceder 100. As duas chamadas futuras
 ao modelo permanecem com `parallel_tool_calls=false`, sem retry ou fallback.
 
+O runner aceita somente as representações de argumentos confirmadas no Hermes
+0.19.0: um objeto JSON completo em texto ou um dicionário já desserializado
+em `function.arguments`. Texto livre, blocos Markdown, JSON duplamente
+serializado e valores que não sejam objetos são rejeitados. Em uma execução
+supervisionada futura, a observabilidade registra apenas nome da ferramenta,
+tipo estrutural, nomes das propriedades, tamanho, SHA-256 e código estável de
+validação — nunca valores, prompt, resposta, token ou Bearer.
+
 Antes de qualquer uso futuro, o diretório `integrations/hermes` completo deve
 ser instalado como
 `$HERMES_HOME/plugins/sistemandrestudio-readonly`. O manifesto `plugin.yaml`

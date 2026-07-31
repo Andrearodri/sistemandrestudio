@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import unittest
+from types import SimpleNamespace
 
 from integrations.hermes.manual_runner import (
     DEFAULT_LIST_LIMIT,
@@ -12,6 +13,8 @@ from integrations.hermes.manual_runner import (
     ManualRunnerContractError,
     execute_local_tool_calls,
     model_request_options,
+    normalize_function_call,
+    observe_tool_call,
     validate_manual_arguments,
     validate_model_tool_calls,
 )
@@ -79,6 +82,82 @@ class ManualRunnerSchemaTests(unittest.TestCase):
 
 
 class ManualRunnerExecutionTests(unittest.TestCase):
+    def test_official_openai_and_hermes_argument_formats_normalize_equally(self) -> None:
+        expected = {"operation": "system_status"}
+        json_function = {
+            "name": TOOL_NAME,
+            "arguments": '{ "operation" : "system_status" }',
+        }
+        object_function = {
+            "name": TOOL_NAME,
+            "arguments": {"operation": "system_status"},
+        }
+        hermes_function = SimpleNamespace(
+            name=TOOL_NAME,
+            arguments={"operation": "system_status"},
+        )
+        for function in (json_function, object_function, hermes_function):
+            with self.subTest(function_type=type(function).__name__):
+                name, arguments = normalize_function_call(function)
+                self.assertEqual(name, TOOL_NAME)
+                self.assertEqual(arguments, expected)
+
+    def test_openai_wrapper_and_hermes_object_tool_calls_are_accepted(self) -> None:
+        openai_call = tool_call({"operation": "system_status"})
+        hermes_call = SimpleNamespace(
+            id="call-hermes",
+            function=SimpleNamespace(
+                name=TOOL_NAME,
+                arguments={"operation": "health"},
+            ),
+        )
+        validated = validate_model_tool_calls([openai_call, hermes_call])
+        self.assertEqual(
+            [call.arguments for call in validated],
+            [{"operation": "system_status"}, {"operation": "health"}],
+        )
+
+    def test_markdown_text_double_serialization_and_non_objects_are_rejected(self) -> None:
+        attempts = (
+            "```json\\n{\\\"operation\\\":\\\"system_status\\\"}\\n```",
+            'text {"operation":"system_status"}',
+            '{"operation":"system_status"} trailing',
+            '"{\\\"operation\\\":\\\"system_status\\\"}"',
+            "[\"operation\", \"system_status\"]",
+        )
+        for arguments in attempts:
+            with self.subTest(arguments=arguments):
+                with self.assertRaises(ManualRunnerContractError):
+                    normalize_function_call({"name": TOOL_NAME, "arguments": arguments})
+
+    def test_wrong_tool_and_unknown_operation_remain_rejected_after_normalization(self) -> None:
+        with self.assertRaises(ManualRunnerContractError):
+            normalize_function_call({"name": "terminal", "arguments": "{}"})
+        with self.assertRaises(ManualRunnerContractError):
+            validate_model_tool_calls([
+                tool_call({"operation": "get_run", "run_id": "run-1"})
+            ])
+
+    def test_sanitized_observation_contains_shape_and_hash_but_not_values(self) -> None:
+        observation = observe_tool_call(
+            tool_call({"operation": "system_status"}),
+            "ACCEPTED",
+        )
+        self.assertEqual(observation["tool_name"], TOOL_NAME)
+        self.assertEqual(observation["arguments_type"], "str")
+        self.assertEqual(observation["argument_keys"], ["operation"])
+        self.assertEqual(observation["validation"], "ACCEPTED")
+        self.assertEqual(len(observation["payload_sha256"]), 64)
+        self.assertGreater(observation["payload_size"], 0)
+        self.assertNotIn("system_status", json.dumps(observation))
+
+    def test_multiple_calls_remain_sequentially_validated_as_one_batch(self) -> None:
+        calls = [
+            tool_call({"operation": "health"}, "call-1"),
+            tool_call({"operation": "system_status"}, "call-2"),
+        ]
+        self.assertEqual(len(validate_model_tool_calls(calls)), 2)
+
     def test_one_to_four_allowlisted_calls_execute_sequentially(self) -> None:
         calls = [
             tool_call({"operation": "health"}, "call-1"),
