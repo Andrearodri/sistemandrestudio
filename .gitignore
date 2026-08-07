@@ -27,6 +27,10 @@ logs/
 data/
 tmp/
 
+# Artefatos locais de auditoria
+/audit-repositories/
+/docs/GITHUB-PROFESSIONAL-AUDIT-*.md
+
 # Editores e sistema operacional
 .DS_Store
 .idea/
