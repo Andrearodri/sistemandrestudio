@@ -425,6 +425,7 @@ describe("controlled editorial orchestration", () => {
   test("human message is bounded and excludes internal paths", () => {
     const message = formatHumanDecisionMessage({
       sourceName: "Google Developers Blog",
+      officialLink: "https://developers.googleblog.com/example",
       title: "Grounding with Parallel foi anunciado oficialmente.",
       verificationStatus: "CONFIRMED",
       confidence: 0.96,
@@ -436,6 +437,7 @@ describe("controlled editorial orchestration", () => {
       newsVersion: 2,
     });
     assert.match(message, /Nova notícia pronta para revisão/);
+    assert.match(message, /https:\/\/developers\.googleblog\.com\/example/);
     assert.doesNotMatch(message, /\/Users\/|token|password/i);
     assert.ok(message.length < 4_000);
   });
@@ -466,6 +468,44 @@ describe("Telegram human decision boundary", () => {
       }),
       code("EDITORIAL_ORCHESTRATION_CALLBACK_SIGNATURE_INVALID"),
     );
+  });
+
+  test("records a signed Telegram revision request with controlled default instructions", async () => {
+    const channel = new TelegramHumanDecisionChannel({
+      botToken: "test-bot-token",
+      approverChatId: "123",
+      webhookSecret: "test-webhook-secret",
+      allowedUserIds: ["420"],
+      clock: () => at,
+      fetchImplementation: async () => new Response(
+        JSON.stringify({ ok: true, result: { message_id: 77 } }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      ),
+    });
+    const repository = new InMemoryEditorialOrchestrationRepository();
+    const service = new EditorialOrchestrationService({
+      repository,
+      pipeline: new FixtureEditorialOrchestrationPipeline(),
+      channel,
+      decisionExecutor: new InMemoryHumanEditorialDecisionExecutor(),
+      clock: () => at,
+    });
+    await service.startScheduledRun(trigger("telegram-change-request"));
+    const request = (await service.getPendingHumanDecisions())[0];
+    if (request === undefined) throw new Error("Expected a Telegram decision request.");
+    const result = await service.registerExternalDecision({
+      callbackData: channel.signCallback("changes", request.id),
+      chatId: "123",
+      userId: "420",
+      receivedAt: at,
+    });
+    assert.equal(result.kind, "DECISION");
+    if (result.kind === "DECISION") {
+      assert.equal(result.decision.decision, "REQUEST_CHANGES");
+      assert.deepEqual(result.decision.changeInstructions, [
+        "Revisão editorial solicitada via Telegram; forneça instruções antes de uma nova versão.",
+      ]);
+    }
   });
 
   test("rejects an unauthorized chat", () => {

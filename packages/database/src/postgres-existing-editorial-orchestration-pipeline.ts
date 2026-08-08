@@ -198,6 +198,9 @@ implements EditorialOrchestrationPipeline {
     }
     return {
       sourceName,
+      ...(review.citations[0]?.canonicalUrl === undefined
+        ? {}
+        : { officialLink: review.citations[0].canonicalUrl }),
       title: review.draft.title,
       verificationStatus,
       confidence: Math.max(
@@ -217,6 +220,9 @@ implements EditorialOrchestrationPipeline {
       limitations: [
         ...review.warnings.map((warning) => warning.message),
         ...review.brief.requiredDisclosures,
+        ...(review.draft.body.trim().length < 280
+          ? ["Aviso editorial: o rascunho é curto e deve ser revisado antes de qualquer uso."]
+          : []),
       ].slice(0, 5),
       draftId: review.draft.draftId,
       draftVersion: draft.draftVersion,
