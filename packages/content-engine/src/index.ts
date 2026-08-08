@@ -6,4 +6,5 @@ export * from "./state-machine.ts";
 export * from "./types.ts";
 export * from "./verification/index.ts";
 export * from "./editorial-drafting.ts";
+export * from "./ollama-editorial-generator.ts";
 export * from "./editorial-fact-localization.ts";

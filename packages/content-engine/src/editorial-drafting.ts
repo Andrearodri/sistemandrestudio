@@ -108,7 +108,11 @@ export interface EditorialGenerationInput {
   readonly editorialIdentityVersion: string;
 }
 export interface EditorialGeneratedText { readonly title: string; readonly subtitle?: string; readonly body: string }
-export interface EditorialTextGenerator { generate(input: EditorialGenerationInput): Promise<EditorialGeneratedText> }
+export interface EditorialTextGenerator {
+  readonly generatorId?: string;
+  readonly generatorVersion?: string;
+  generate(input: EditorialGenerationInput): Promise<EditorialGeneratedText>;
+}
 
 export class EditorialDraftError extends Error {
   readonly code: string;
@@ -193,6 +197,8 @@ export function createEditorialBrief(input: {
 }
 
 export class DeterministicEditorialTextGenerator implements EditorialTextGenerator {
+  readonly generatorId = "deterministic-editorial";
+  readonly generatorVersion = "v1";
   async generate(input: EditorialGenerationInput): Promise<EditorialGeneratedText> {
     if (input.brief.editorialEligibility !== "ALLOW_DRAFT") throw new EditorialDraftError("EDITORIAL_DRAFT_NOT_ELIGIBLE", "Only confirmed items may enter the normal draft flow.");
     if (input.brief.allowedFacts.length === 0) throw new EditorialDraftError("EDITORIAL_DRAFT_FACTS_MISSING", "A factual draft requires at least one allowed fact.");
@@ -211,12 +217,14 @@ export class DeterministicEditorialTextGenerator implements EditorialTextGenerat
 
 export async function generateEditorialDraft(input: EditorialGenerationInput, generator: EditorialTextGenerator = new DeterministicEditorialTextGenerator()): Promise<EditorialDraft> {
   const generated = await generator.generate(input);
+  const generatorId = generator.generatorId ?? "deterministic-editorial";
+  const generatorVersion = generator.generatorVersion ?? "v1";
   const draftBase: Omit<EditorialDraft, "subtitle"> = {
-    draftId: `draft-${digest(stableJson({ briefId: input.brief.briefId, format: input.format, generator: "deterministic-editorial-v1" }))}`,
+    draftId: `draft-${digest(stableJson({ briefId: input.brief.briefId, format: input.format, generator: `${generatorId}-${generatorVersion}` }))}`,
     newsId: input.brief.newsId, briefId: input.brief.briefId, format: input.format, language: "pt-BR",
     title: generated.title, body: generated.body,
     sourceCitations: input.brief.sourceReferences, warnings: input.brief.warnings, prohibitedClaimsChecked: false,
-    validationStatus: "BLOCKED", generatorId: "deterministic-editorial", generatorVersion: "v1", createdAt: input.brief.createdAt,
+    validationStatus: "BLOCKED", generatorId, generatorVersion, createdAt: input.brief.createdAt,
   };
   const draft: EditorialDraft = generated.subtitle === undefined ? draftBase : { ...draftBase, subtitle: generated.subtitle };
   const validation = validateEditorialDraft(draft, input.brief, input.maxCharacters);
