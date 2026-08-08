@@ -25,6 +25,14 @@ afterEach(async () => {
 });
 
 describe("internal editorial read API", () => {
+  test("exposes an unauthenticated liveness probe without repository access", async () => {
+    const context = await start();
+    const response = await fetch(`${context.url}/healthz`);
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { ok: true });
+    assert.equal(context.repository.mutations, 0);
+  });
+
   test("returns 401 without Bearer authentication", async () => {
     const context = await start();
     const response = await fetch(`${context.url}/internal/health`);

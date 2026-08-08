@@ -23,6 +23,38 @@ services:
       - sistemandrestudio_postgres_data:/var/lib/postgresql/data
       - ./infrastructure/docker/init:/docker-entrypoint-initdb.d:ro
 
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: on-failure:3
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env.local
+    environment:
+      NODE_ENV: production
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_SSL: "false"
+      ORCHESTRATION_API_HOST: 0.0.0.0
+      ORCHESTRATION_API_PORT: "4317"
+      ORCHESTRATION_API_ALLOW_CONTAINER_BIND: "true"
+      HUMAN_DECISION_CHANNEL: CONSOLE
+      DRY_RUN_ORCHESTRATION: "true"
+    ports:
+      - "127.0.0.1:${ORCHESTRATION_API_PORT:-4317}:4317"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "fetch('http://127.0.0.1:4317/healthz').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 10s
+
 volumes:
   sistemandrestudio_postgres_data:
     name: sistemandrestudio_postgres_data
