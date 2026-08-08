@@ -165,10 +165,12 @@ export interface EditorialOrchestrationEvent {
 export interface HumanDecisionMessage {
   readonly sourceName: string;
   readonly officialLink?: string;
+  readonly revisionLabel?: "Versão revisada";
   readonly title: string;
   readonly verificationStatus: "CONFIRMED" | "PARTIALLY_CONFIRMED";
   readonly confidence: number;
   readonly summary: string;
+  readonly body?: string;
   readonly allowedClaims: readonly string[];
   readonly limitations: readonly string[];
   readonly draftId: string;
@@ -1822,7 +1824,7 @@ export function formatHumanDecisionMessage(message: HumanDecisionMessage): strin
   const claims = message.allowedClaims.slice(0, 5).map((item) => `- ${item}`).join("\n");
   const limitations = message.limitations.slice(0, 5).map((item) => `- ${item}`).join("\n");
   return [
-    "Nova notícia pronta para revisão",
+    message.revisionLabel ?? "Nova notícia pronta para revisão",
     "",
     "Fonte:",
     cleanText(message.sourceName, 120),
@@ -1841,6 +1843,9 @@ export function formatHumanDecisionMessage(message: HumanDecisionMessage): strin
     "",
     "Resumo:",
     cleanText(message.summary, 800),
+    ...(message.body === undefined
+      ? []
+      : ["", "Corpo:", cleanText(message.body, 2_400)]),
     "",
     "Fatos permitidos:",
     claims || "- Nenhum claim resumido.",
@@ -1933,6 +1938,7 @@ function validateDecisionMessage(message: HumanDecisionMessage) {
   if (message.officialLink !== undefined) cleanHttpsUrl(message.officialLink);
   cleanText(message.title, 240);
   cleanText(message.summary, 800);
+  if (message.body !== undefined) cleanText(message.body, 2_400);
   message.allowedClaims.forEach((item) => cleanText(item, 500));
   message.limitations.forEach((item) => cleanText(item, 500));
   return message;

@@ -39,4 +39,36 @@ describe("local Ollama editorial generator", () => {
   test("rejects a non-loopback provider URL", () => {
     assert.throws(() => new OllamaEditorialTextGenerator({ baseUrl: "https://example.com/v1", model: "gemma4:e2b-it-qat" }), { code: "LLM_BASE_URL_INVALID" });
   });
+
+  test("generates one bounded evidence-only revision with 4096 context and 500 output tokens", async () => {
+    let request: unknown;
+    globalThis.fetch = async (_input, init) => {
+      request = JSON.parse(String(init?.body));
+      return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({
+        title: "Radar Researcher: anúncio oficial",
+        subtitle: "Resumo factual. Sem teste prático.",
+        body: "Radar Researcher foi oficialmente anunciado.\n\nRadar Researcher é uma ferramenta de IA para explorar dados da Internet em linguagem simples.\n\nFonte oficial: https://blog.cloudflare.com/introducing-radar-researcher/ Radar Researcher was officially announced.",
+      }) } }] }), { status: 200 });
+    };
+    const generator = new OllamaEditorialTextGenerator({ baseUrl: "http://127.0.0.1:11434/v1", model: "gemma4:e2b-it-qat" });
+    const generated = await generator.generateRevision({
+      previousTitle: "Radar Researcher Oficialmente Anunciado",
+      previousBody: "O Radar Researcher foi oficialmente anunciado.",
+      officialSourceTitle: "Introducing Radar Researcher: An AI tool for exploring Internet data in plain language",
+      officialSourceName: "Cloudflare Blog",
+      officialLink: "https://blog.cloudflare.com/introducing-radar-researcher/",
+      supportedFacts: [
+        "Radar Researcher was officially announced.",
+        "Radar Researcher is an AI tool for exploring Internet data in plain language.",
+      ],
+      revisionInstructions: ["Ampliar sem inventar."],
+      maximumCharacters: 2_400,
+    });
+    assert.match(generated.title, /Radar Researcher/);
+    const payload = request as Record<string, unknown>;
+    assert.equal(payload.max_tokens, 500);
+    assert.deepEqual(payload.options, { num_ctx: 4096 });
+    assert.equal(payload.temperature, 0.2);
+    assert.equal("tools" in payload, false);
+  });
 });

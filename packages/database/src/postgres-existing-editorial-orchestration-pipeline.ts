@@ -202,6 +202,9 @@ implements EditorialOrchestrationPipeline {
         ? {}
         : { officialLink: review.citations[0].canonicalUrl }),
       title: review.draft.title,
+      ...(draft.draftVersion > 1
+        ? { revisionLabel: "Versão revisada" as const, body: review.draft.body }
+        : {}),
       verificationStatus,
       confidence: Math.max(
         0,

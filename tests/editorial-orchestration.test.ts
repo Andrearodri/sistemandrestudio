@@ -498,6 +498,7 @@ describe("Telegram human decision boundary", () => {
       chatId: "123",
       userId: "420",
       receivedAt: at,
+      externalMessageReference: "telegram-callback:change-1",
     });
     assert.equal(result.kind, "DECISION");
     if (result.kind === "DECISION") {
@@ -505,6 +506,15 @@ describe("Telegram human decision boundary", () => {
       assert.deepEqual(result.decision.changeInstructions, [
         "Revisão editorial solicitada via Telegram; forneça instruções antes de uma nova versão.",
       ]);
+      const replay = await service.registerExternalDecision({
+        callbackData: channel.signCallback("changes", request.id),
+        chatId: "123",
+        userId: "420",
+        receivedAt: at,
+        externalMessageReference: "telegram-callback:change-1",
+      });
+      assert.equal(replay.kind, "DECISION");
+      if (replay.kind === "DECISION") assert.equal(replay.replayed, true);
     }
   });
 
