@@ -24,7 +24,7 @@ describe("local Ollama editorial generator", () => {
       return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ title: "Atlas 2.0", subtitle: "Resumo factual", body: "Atlas 2.0 foi anunciado oficialmente." }) } }] }), { status: 200 });
     };
     const generator = new OllamaEditorialTextGenerator({ baseUrl: "http://127.0.0.1:11434/v1", model: "gemma4:e2b-it-qat" });
-    const generated = await generator.generate({ brief: brief(), format: "WEBSITE_NEWS_BRIEF", language: "pt-BR", tone: "informativo", maxCharacters: 600, editorialIdentityVersion: "v1" });
+    const generated = await generator.generate({ brief: brief(), format: "LINKEDIN_SHORT_POST", language: "pt-BR", tone: "informativo", maxCharacters: 600, editorialIdentityVersion: "v1" });
     assert.equal(generated.title, "Atlas 2.0");
     assert.equal(generated.body, "Atlas 2.0 foi anunciado oficialmente.");
     const payload = request as Record<string, unknown>;
@@ -38,6 +38,18 @@ describe("local Ollama editorial generator", () => {
 
   test("rejects a non-loopback provider URL", () => {
     assert.throws(() => new OllamaEditorialTextGenerator({ baseUrl: "https://example.com/v1", model: "gemma4:e2b-it-qat" }), { code: "LLM_BASE_URL_INVALID" });
+  });
+
+  test("rejects a website brief below the safe 180-word floor", async () => {
+    globalThis.fetch = async () => new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({
+      title: "WebMCP anunciado",
+      body: `${Array.from({ length: 172 }, (_, index) => `palavra${index}`).join(" ")} https://example.com/atlas`,
+    }) } }] }), { status: 200 });
+    const generator = new OllamaEditorialTextGenerator({ baseUrl: "http://127.0.0.1:11434/v1", model: "gemma4:e2b-it-qat" });
+    await assert.rejects(
+      generator.generate({ brief: brief(), format: "WEBSITE_NEWS_BRIEF", language: "pt-BR", tone: "informativo", maxCharacters: 3_000, editorialIdentityVersion: "v1" }),
+      { code: "OLLAMA_EDITORIAL_LENGTH_INVALID" },
+    );
   });
 
   test("generates one bounded evidence-only revision with 4096 context and 500 output tokens", async () => {
