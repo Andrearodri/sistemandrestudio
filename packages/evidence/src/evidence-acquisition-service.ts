@@ -141,6 +141,7 @@ export class OfficialEvidenceAcquisitionService {
       pages,
       acquisitionPolicyVersion: OFFICIAL_EVIDENCE_POLICY_VERSION,
       sourcePolicyVersion: policy.version,
+      claims: input.claims,
     });
     const identityMode = input.identityMode ?? "EXPLICIT";
     const effectiveInput = identityMode === "CONTENT_VERSIONED"

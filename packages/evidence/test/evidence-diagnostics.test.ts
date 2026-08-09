@@ -228,6 +228,67 @@ describe("evidence association diagnostics", () => {
     assert.equal(result.claims[0]?.expectedSubject, "Product-X");
   });
 
+  test("recognizes an explicit WebMCP preview without LLM inference", () => {
+    const result = buildDeterministicClaims({
+      newsId: "news-webmcp",
+      title: "Give any website a WebMCP interface",
+      summary: "Today we're launching a developer preview of WebMCP on Cloudflare.",
+    });
+    assert.equal(result.claims[0]?.type, "FEATURE_RELEASE");
+    assert.equal(result.claims[0]?.expectedSubject, "WebMCP");
+  });
+
+  test("recognizes a preview API entity from the official summary", () => {
+    const result = buildDeterministicClaims({
+      newsId: "news-routing-api",
+      title: "A unified API for AI model routing",
+      summary: "Google Cloud API Gateway now offers a model routing feature in Public Preview.",
+    });
+    assert.equal(result.claims[0]?.type, "FEATURE_RELEASE");
+    assert.equal(result.claims[0]?.expectedSubject, "Google Cloud API Gateway");
+  });
+
+  test("does not mistake V8 isolates for a Kitesurf product version", () => {
+    const result = buildDeterministicClaims({
+      newsId: "news-kitesurf",
+      title: "Introducing Kitesurf: The agent-first browser that runs in V8 isolates on Cloudflare Workers",
+      summary: "Kitesurf is Cloudflare's new stateless browser designed for the Agentic Cloud.",
+    });
+    assert.equal(result.claims[0]?.type, "PRODUCT_LAUNCH");
+    assert.equal(result.claims[0]?.expectedSubject, "Kitesurf");
+    assert.notEqual(result.claims[0]?.type, "VERSION_RELEASE");
+  });
+
+  test("integrates WebMCP claim creation with official preview evidence", () => {
+    const claim = buildDeterministicClaims({
+      newsId: "news-webmcp-integration",
+      title: "Give any website a WebMCP interface",
+      summary: "Today we're launching a developer preview of WebMCP on Cloudflare.",
+    }).claims;
+    const candidates = buildEvidenceCandidates("cloudflare-blog", claim, [page(releaseArticle("WebMCP", "WebMCP was announced as preview."))], DEFAULT_EVIDENCE_LIMITS);
+    assert.equal(candidates[0]?.evidence.supportsClaim, true);
+  });
+
+  test("integrates API preview claim creation with official evidence", () => {
+    const claim = buildDeterministicClaims({
+      newsId: "news-routing-api-integration",
+      title: "A unified API for AI model routing",
+      summary: "Google Cloud API Gateway now offers a model routing feature in Public Preview.",
+    }).claims;
+    const candidates = buildEvidenceCandidates("google-developers-blog", claim, [page(releaseArticle("Google Cloud API Gateway", "The model routing feature is in Public Preview."))], DEFAULT_EVIDENCE_LIMITS);
+    assert.equal(candidates[0]?.evidence.supportsClaim, true);
+  });
+
+  test("integrates Kitesurf launch without treating V8 as its version", () => {
+    const claim = buildDeterministicClaims({
+      newsId: "news-kitesurf-integration",
+      title: "Introducing Kitesurf: The agent-first browser that runs in V8 isolates on Cloudflare Workers",
+      summary: "Kitesurf is Cloudflare's new stateless browser designed for the Agentic Cloud.",
+    }).claims;
+    const candidates = buildEvidenceCandidates("cloudflare-blog", claim, [page(releaseArticle("Kitesurf", "Kitesurf was officially announced."))], DEFAULT_EVIDENCE_LIMITS);
+    assert.equal(candidates[0]?.evidence.supportsClaim, true);
+  });
+
   test("creates a version claim from an explicit version introduction", () => {
     const result = buildDeterministicClaims({
       newsId: "news-2",
