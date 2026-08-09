@@ -34,3 +34,14 @@
 - Verificação pré-homologação do executor rastreado: typecheck, build e suíte completa `366/366` passaram; nenhuma chamada ao Gemma foi feita durante a correção.
 - Homologação pelo executor rastreado: exatamente 2 chamadas, sem repetição adicional. Tentativa 1 (`INITIAL_GENERATION`): `SCHEMA_VALID`, 111 palavras, `WORD_COUNT_BELOW_MINIMUM` e `UNSUPPORTED_QUALIFIER`, 695 tokens de prompt, 183 de completion, limite 768, `STOP`, 9,7 s. Tentativa 2 (`DIRECTED_REPAIR`): `SCHEMA_INVALID`, `REPAIR_SCHEMA_FAILED`, 424 tokens de prompt, 271 de completion, limite 768, `STOP`, 6,9 s.
 - Resultado final: `EDITORIAL_DRAFT_GENERATION_FAILED`; nenhum rascunho ou solicitação de decisão foi criado (`editorial_drafts=0`, `editorial_human_decision_requests=0`), Telegram não foi enviado e publicação permaneceu `SKIPPED`.
+
+## Provedor editorial OpenAI/Luna
+
+- Implementação local adicionada sem alterar a política editorial: `OpenAIEditorialProvider` usa somente `OPENAI_API_KEY`, fixa o modelo `gpt-5.6-luna` e nunca faz fallback automático para Gemma.
+- O Radar Diário continua explicitamente em Ollama; apenas o escopo `LONG_FORM` pode selecionar OpenAI por `EDITORIAL_PROVIDER=openai`.
+- A integração usa a Responses API, `store=false`, `tools=[]`, raciocínio baixo e Structured Outputs estritos em `text.format`, com JSON Schema derivado do mesmo schema Zod editorial.
+- O orçamento é limitado a duas chamadas por homologação; uso e custo são acumulados de forma sanitizada. O cálculo usa US$0,20/1M tokens de entrada e US$1,20/1M tokens de saída conforme a documentação oficial consultada.
+- Testes adicionados cobrem seleção de provedor, schema estrito, resposta válida/inválida, 401/429/5xx/timeout, limite de chamadas, métricas sanitizadas e ausência de efeitos de persistência/publicação.
+- `npm run typecheck`, `npm run build`, os testes específicos do provedor e a suíte completa passaram (`373/373`).
+- A criação do provedor por ambiente exige `OPENAI_HARD_SPEND_LIMIT_USD=1` além de `OPENAI_API_KEY`; sem essa confirmação a chamada é bloqueada antes do SDK.
+- Homologação real não executada: `OPENAI_API_KEY` está ausente no ambiente local e o hard spend limit mensal de US$1 ainda não foi confirmado. Nenhuma chamada OpenAI/Gemma, persistência, Telegram ou publicação foi realizada nesta etapa.

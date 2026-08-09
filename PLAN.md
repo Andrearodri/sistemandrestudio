@@ -18,5 +18,9 @@
 - [x] Executar a homologação pelo executor rastreado, limitada a duas chamadas e sem persistir saída inválida.
 - [ ] Persistir exatamente um rascunho válido e enviar uma mensagem ao Telegram.
 - [ ] Parar aguardando decisão humana; manter publicação `SKIPPED`.
+- [x] Adicionar provedor editorial OpenAI explícito para rascunhos longos, mantendo Radar em Ollama.
+- [x] Integrar Responses API com Structured Outputs estritos derivados do schema Zod compartilhado.
+- [x] Cobrir seleção de provedor, erros HTTP, limite de duas chamadas, uso/custo sanitizados e ausência de efeitos externos.
+- [ ] Confirmar `OPENAI_API_KEY` e `OPENAI_HARD_SPEND_LIMIT_USD=1` antes de qualquer chamada real.
 
 Resultado: o executor rastreado foi validado com 366/366 testes e a homologação consumiu duas chamadas. A geração inicial falhou por tamanho/qualificador; o reparo direcionado falhou no schema. Não houve persistência nem Telegram.
