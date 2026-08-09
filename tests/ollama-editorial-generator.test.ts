@@ -113,7 +113,7 @@ describe("local Ollama editorial generator", () => {
   test("keeps prohibited qualifiers out of the WebMCP fact packet", () => {
     const packet = createEditorialFactPacket(brief());
     assert.deepEqual(packet.allowedQualifiers, []);
-    assert.deepEqual(packet.prohibitedQualifiers, ["preview", "beta", "versão", "version", "disponibilidade"]);
+    assert.deepEqual(packet.prohibitedQualifiers, ["preview", "beta", "versão", "version", "disponibilidade", "disponível", "available"]);
     assert.deepEqual(findProhibitedEditorialQualifiers("WebMCP em preview e beta", packet), ["preview", "beta"]);
   });
 

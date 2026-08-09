@@ -12,8 +12,8 @@
 - [x] Separar orçamento de artigo WebMCP do resumo curto e auditar payload efetivo.
 - [x] Construir fact packet determinístico e reparar somente `body`.
 - [x] Testar orçamento, tokens, qualificadores proibidos e reparo sem invenção.
-- [ ] Executar a única nova homologação autorizada, limitada a duas chamadas.
+- [x] Executar a única nova homologação autorizada, limitada a duas chamadas.
 - [ ] Persistir exatamente um rascunho válido e enviar uma mensagem ao Telegram.
 - [ ] Parar aguardando decisão humana; manter publicação `SKIPPED`.
 
-Resultado anterior: duas chamadas falharam sem persistência. A correção de orçamento/reparo passou 362 testes; a nova homologação ainda não foi iniciada.
+Resultado: a rodada consumiu uma chamada e falhou na validação final antes do reparo; não houve persistência nem Telegram. Não realizar novas chamadas nesta etapa.

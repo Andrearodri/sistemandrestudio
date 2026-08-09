@@ -1,6 +1,6 @@
 import type { EditorialBrief } from "./editorial-drafting.ts";
 
-export const WEBMCP_PROHIBITED_QUALIFIERS = ["preview", "beta", "versão", "version", "disponibilidade"] as const;
+export const WEBMCP_PROHIBITED_QUALIFIERS = ["preview", "beta", "versão", "version", "disponibilidade", "disponível", "available"] as const;
 
 export interface EditorialFactPacket {
   readonly entity: string;
