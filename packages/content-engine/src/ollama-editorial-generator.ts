@@ -17,6 +17,13 @@ export interface OllamaEditorialRevisionInput {
   readonly maximumCharacters: number;
 }
 
+export interface OllamaRadarSummaryInput {
+  readonly title: string;
+  readonly sourceName: string;
+  readonly officialLink: string;
+  readonly supportedFacts: readonly string[];
+}
+
 interface OllamaResponse {
   readonly choices?: readonly { readonly message?: { readonly content?: unknown } }[];
 }
@@ -102,6 +109,26 @@ export class OllamaEditorialTextGenerator implements EditorialTextGenerator {
         }),
       },
     ], input.maximumCharacters, 500);
+  }
+
+  async generateRadarSummary(input: OllamaRadarSummaryInput): Promise<string> {
+    if (input.supportedFacts.length === 0 || !input.officialLink.startsWith("https://")) {
+      throw new OllamaEditorialGeneratorError("RADAR_SUMMARY_EVIDENCE_MISSING", "A radar summary requires persisted facts and one HTTPS official source.");
+    }
+    const generated = await this.#complete([
+      {
+        role: "system",
+        content: [
+          "Resuma em português brasileiro usando somente os fatos fornecidos.",
+          "Não use ferramentas, busca, conhecimento externo ou suposições.",
+          "Escreva duas ou três frases explicando o que aconteceu, por que importa e para quem pode ser útil.",
+          "Não invente datas, números, versões, preços, disponibilidade ou experiência prática.",
+          "Retorne JSON puro com title igual ao título recebido e body contendo somente o resumo.",
+        ].join(" "),
+      },
+      { role: "user", content: JSON.stringify(input) },
+    ], 600, 160);
+    return generated.body;
   }
 
   async #complete(

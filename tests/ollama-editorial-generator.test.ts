@@ -71,4 +71,20 @@ describe("local Ollama editorial generator", () => {
     assert.equal(payload.temperature, 0.2);
     assert.equal("tools" in payload, false);
   });
+
+  test("generates a daily radar summary with 4096 context and at most 160 output tokens", async () => {
+    let request: unknown;
+    globalThis.fetch = async (_input, init) => {
+      request = JSON.parse(String(init?.body));
+      return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ title: "Official item", body: "O anúncio foi confirmado. A novidade pode ser útil para desenvolvedores." }) } }] }), { status: 200 });
+    };
+    const generator = new OllamaEditorialTextGenerator({ baseUrl: "http://127.0.0.1:11434/v1", model: "gemma4:e2b-it-qat" });
+    const summary = await generator.generateRadarSummary({ title: "Official item", sourceName: "Official source", officialLink: "https://example.com/item", supportedFacts: ["The item was announced."] });
+    assert.match(summary, /desenvolvedores/);
+    const payload = request as Record<string, unknown>;
+    assert.equal(payload.max_tokens, 160);
+    assert.deepEqual(payload.options, { num_ctx: 4096 });
+    assert.equal(payload.temperature, 0.2);
+    assert.equal("tools" in payload, false);
+  });
 });
