@@ -37,6 +37,7 @@ describe("local Ollama editorial generator", () => {
     const messages = payload.messages as readonly { role: string; content: string }[];
     assert.match(messages[0]?.content ?? "", /somente um objeto JSON plano/);
     assert.match(messages[0]?.content ?? "", /sem Markdown/);
+    assert.match(messages[0]?.content ?? "", /não escreva preview, beta, versão, disponibilidade/);
     assert.match(messages[1]?.content ?? "", /emitOnlyJsonObject/);
   });
 
