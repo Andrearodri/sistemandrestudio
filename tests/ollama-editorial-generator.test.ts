@@ -34,6 +34,10 @@ describe("local Ollama editorial generator", () => {
     assert.equal(payload.reasoning_effort, "none");
     assert.deepEqual(payload.response_format, { type: "json_object" });
     assert.equal("tools" in payload, false);
+    const messages = payload.messages as readonly { role: string; content: string }[];
+    assert.match(messages[0]?.content ?? "", /somente um objeto JSON plano/);
+    assert.match(messages[0]?.content ?? "", /sem Markdown/);
+    assert.match(messages[1]?.content ?? "", /emitOnlyJsonObject/);
   });
 
   test("rejects a non-loopback provider URL", () => {
@@ -57,6 +61,15 @@ describe("local Ollama editorial generator", () => {
     await assert.rejects(
       generator.generate({ brief: brief(), format: "LINKEDIN_SHORT_POST", language: "pt-BR", tone: "informativo", maxCharacters: 600, editorialIdentityVersion: "v1" }),
       { code: "OLLAMA_SUBTITLE_REQUIRED" },
+    );
+  });
+
+  test("rejects non-JSON output without exposing model content", async () => {
+    globalThis.fetch = async () => new Response(JSON.stringify({ choices: [{ message: { content: "texto fora do JSON" } }] }), { status: 200 });
+    const generator = new OllamaEditorialTextGenerator({ baseUrl: "http://127.0.0.1:11434/v1", model: "gemma4:e2b-it-qat" });
+    await assert.rejects(
+      generator.generate({ brief: brief(), format: "LINKEDIN_SHORT_POST", language: "pt-BR", tone: "informativo", maxCharacters: 600, editorialIdentityVersion: "v1" }),
+      { code: "OLLAMA_RESPONSE_INVALID", message: "Local Ollama must return one JSON object without surrounding text." },
     );
   });
 
