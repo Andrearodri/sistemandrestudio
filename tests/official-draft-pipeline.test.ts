@@ -7,7 +7,7 @@ import {
   EditorialDraftWorkflowError,
   EditorialDraftWorkflowService,
 } from "../packages/application/src/index.ts";
-import { ANDRE_STUDIO_VERIFICATION_POLICY_V1, createReceivedNews, evaluateVerification } from "../packages/content-engine/src/index.ts";
+import { ANDRE_STUDIO_VERIFICATION_POLICY_V1, EditorialGenerationDiagnosticError, createReceivedNews, evaluateVerification } from "../packages/content-engine/src/index.ts";
 
 const identityInput = { sourceId: "google-developers-blog", externalId: "post-42", canonicalUrl: "https://developers.googleblog.com/item/#fragment", contentHash: "ABC123", eventIdentity: "2026-07-25" };
 
@@ -46,8 +46,8 @@ describe("official editorial draft pipeline policy", () => {
     const service = new EditorialDraftWorkflowService({
       loadContext: async () => ({ news, verification, claims, evidence }),
       executeAtomic: async () => { atomicCalls += 1; throw new Error("must not persist"); },
-    }, { generate: async () => { throw Object.assign(new Error("schema failure"), { code: "OLLAMA_RESPONSE_INVALID" }); } });
-    await assert.rejects(service.createDraft({ newsId: news.id, verificationId: verification.verificationId, format: "WEBSITE_NEWS_BRIEF", idempotencyKey: "no-partial-key", expectedVersion: 0, commandId: "no-partial-command", approvalRequestId: "no-partial-approval", actor: { type: "SYSTEM", id: "test" }, occurredAt: baseNews.receivedAt }), (error) => error instanceof Error && "code" in error && (error as { code?: unknown }).code === "OLLAMA_RESPONSE_INVALID");
+    }, { generate: async () => { throw new EditorialGenerationDiagnosticError([{ stage: "INITIAL_GENERATION", attempt: 1, codes: ["INITIAL_SCHEMA_FAILED"], fields: ["subtitle"], parseResult: "SCHEMA_INVALID", durationMs: 5, callCount: 1 }]); } });
+    await assert.rejects(service.createDraft({ newsId: news.id, verificationId: verification.verificationId, format: "WEBSITE_NEWS_BRIEF", idempotencyKey: "no-partial-key", expectedVersion: 0, commandId: "no-partial-command", approvalRequestId: "no-partial-approval", actor: { type: "SYSTEM", id: "test" }, occurredAt: baseNews.receivedAt }), (error) => error instanceof Error && "code" in error && (error as { code?: unknown }).code === "EDITORIAL_DRAFT_GENERATION_FAILED" && "diagnostics" in error && (error as { diagnostics?: readonly { codes: readonly string[] }[] }).diagnostics?.[0]?.codes[0] === "INITIAL_SCHEMA_FAILED");
     assert.equal(atomicCalls, 0);
   });
 });

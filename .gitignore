@@ -26,6 +26,7 @@ logs/
 .n8n/
 data/
 tmp/
+_scratch/
 
 # Artefatos locais de auditoria
 /audit-repositories/
