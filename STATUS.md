@@ -10,9 +10,12 @@
 - Reparo: no máximo uma segunda chamada direcionada, somente para objeto estruturado válido com falhas reparáveis; JSON inválido não é repetido.
 - Diagnóstico interno: envelope tipado com estágio, tentativa, códigos allow-listed, word count, campos, parse/schema, duração e chamadas; conteúdo de prompt/modelo/evidência é excluído.
 - Fronteira externa: continua usando `EDITORIAL_DRAFT_GENERATION_FAILED`, com diagnóstico seguro anexado apenas no serviço interno/relatório.
-- Testes: suíte completa (360/360), typecheck e build passaram.
-- Nova homologação: encerrada após exatamente duas chamadas (geração + reparo direcionado), sem persistência ou Telegram.
+- Orçamento WebMCP: contexto 4096; `max_tokens=num_predict=768`; schema `body` entre 1 e 12.000 caracteres; sem `stop`; margem reservada para JSON/instruções. O Radar continua isolado em 160 tokens.
+- Fact packet WebMCP: entidade, anúncio confirmado, fatos apoiados, URL oficial, qualificadores permitidos e proibidos; sem status de disponibilidade confirmado, `preview`, `beta`, `versão` e `disponibilidade` são proibidos.
+- Reparo: schema de saída contém somente `body`; título/subtitle válidos são preservados e o body inválido integral não é reenviado.
+- Testes: suíte completa (362/362), typecheck e build passaram.
+- Nova homologação: pronta para a única rodada autorizada, máximo de duas chamadas.
 - Diagnóstico sanitizado: tentativa 1 `SCHEMA_VALID`, 56 palavras, códigos `WORD_COUNT_BELOW_MINIMUM` e `UNSUPPORTED_QUALIFIER`; tentativa 2 `SCHEMA_VALID`, 56 palavras, mesmos códigos mais `FINAL_VALIDATION_FAILED`; campo afetado: `body`.
 - Resultado externo: `EDITORIAL_DRAFT_GENERATION_FAILED`; o diagnóstico interno preservou estágio, tentativa, códigos, contagem, campo, parse/schema, duração e quantidade de chamadas, sem conteúdo do modelo.
 - Confirmação PostgreSQL: `editorial_drafts=0` e `editorial_human_decision_requests=0` para o item WebMCP.
-- Publicação: bloqueada (`PUBLICATION_ENABLED=false`); nenhuma mensagem foi enviada e nenhuma nova chamada deve ser feita nesta etapa.
+- Publicação: bloqueada (`PUBLICATION_ENABLED=false`); Telegram só será acionado após validação completa e persistência única.

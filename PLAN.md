@@ -9,7 +9,11 @@
 - [x] Preservar diagnósticos internos tipados entre wrapper e serviço, sem conteúdo sensível.
 - [x] Validar diagnósticos, sanitização, contagem e propagação externa.
 - [x] Executar a nova homologação controlada e bloquear saídas inválidas.
+- [x] Separar orçamento de artigo WebMCP do resumo curto e auditar payload efetivo.
+- [x] Construir fact packet determinístico e reparar somente `body`.
+- [x] Testar orçamento, tokens, qualificadores proibidos e reparo sem invenção.
+- [ ] Executar a única nova homologação autorizada, limitada a duas chamadas.
 - [ ] Persistir exatamente um rascunho válido e enviar uma mensagem ao Telegram.
 - [ ] Parar aguardando decisão humana; manter publicação `SKIPPED`.
 
-Resultado: a nova rodada consumiu duas chamadas e falhou na validação; não houve persistência nem Telegram. Não realizar novas chamadas nesta etapa.
+Resultado anterior: duas chamadas falharam sem persistência. A correção de orçamento/reparo passou 362 testes; a nova homologação ainda não foi iniciada.
