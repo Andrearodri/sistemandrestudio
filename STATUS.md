@@ -28,3 +28,7 @@
 - Nova homologação autorizada: executor efetivo rodou fora do sandbox; pré-condições confirmadas (`VERIFIED`/`CONFIRMED`, 2 evidências, zero drafts). Houve exatamente 1 chamada ao Gemma: prompt 695 tokens, completion 183, limite 768, término `STOP`, duração aproximada 8,8 s.
 - Resultado da nova homologação: falha no estágio de validação determinística após a geração inicial, tentativa 1, campo `body`; o executor `_scratch/webmcp-full-homologation.ts` lançou referência a variável inexistente (`input`), impedindo contagem de palavras e códigos de regra. Nenhuma segunda chamada foi feita.
 - Persistência/Telegram após a nova homologação: `editorial_drafts=0` e `editorial_human_decision_requests=0`; publicação `SKIPPED` e `PUBLICATION_ENABLED=false`.
+- Executor rastreado: `apps/sistemandrestudio-api/src/webmcp-homologation.ts`, com item e dependências explícitos, geração/reparo via adapter existente, persistência via serviço existente e Telegram via `TelegramHumanDecisionChannel`. `_scratch/webmcp-full-homologation.ts` contém somente um lançador descartável.
+- ReferenceError corrigido: a validação agora recebe explicitamente `input`; nenhum estado depende de variável implícita.
+- Regressões adicionadas: resposta schema-valid entra na validação, códigos e contagem são calculados, reparo usa somente `body`, falha não persiste e sucesso persiste uma única vez.
+- Verificação pré-homologação do executor rastreado: typecheck, build e suíte completa `366/366` passaram; nenhuma chamada ao Gemma foi feita durante a correção.

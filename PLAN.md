@@ -13,7 +13,9 @@
 - [x] Construir fact packet determinístico e reparar somente `body`.
 - [x] Testar orçamento, tokens, qualificadores proibidos e reparo sem invenção.
 - [x] Executar a única nova homologação autorizada, limitada a duas chamadas.
+- [x] Extrair o executor WebMCP para CLI rastreado e remover lógica operacional do `_scratch/`.
+- [x] Cobrir ReferenceError, reparo limitado, zero persistência em falha e persistência única em sucesso.
 - [ ] Persistir exatamente um rascunho válido e enviar uma mensagem ao Telegram.
 - [ ] Parar aguardando decisão humana; manter publicação `SKIPPED`.
 
-Resultado: a rodada consumiu uma chamada e falhou na validação final antes do reparo; não houve persistência nem Telegram. A causa downstream agora é preservada como diagnóstico interno seguro, sem repetir a chamada nesta etapa.
+Resultado anterior: a rodada consumiu uma chamada e falhou por ReferenceError no executor temporário; não houve persistência nem Telegram. O executor foi corrigido, rastreado e testado. A nova homologação fica limitada a duas chamadas.
