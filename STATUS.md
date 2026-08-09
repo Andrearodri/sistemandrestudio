@@ -32,3 +32,5 @@
 - ReferenceError corrigido: a validação agora recebe explicitamente `input`; nenhum estado depende de variável implícita.
 - Regressões adicionadas: resposta schema-valid entra na validação, códigos e contagem são calculados, reparo usa somente `body`, falha não persiste e sucesso persiste uma única vez.
 - Verificação pré-homologação do executor rastreado: typecheck, build e suíte completa `366/366` passaram; nenhuma chamada ao Gemma foi feita durante a correção.
+- Homologação pelo executor rastreado: exatamente 2 chamadas, sem repetição adicional. Tentativa 1 (`INITIAL_GENERATION`): `SCHEMA_VALID`, 111 palavras, `WORD_COUNT_BELOW_MINIMUM` e `UNSUPPORTED_QUALIFIER`, 695 tokens de prompt, 183 de completion, limite 768, `STOP`, 9,7 s. Tentativa 2 (`DIRECTED_REPAIR`): `SCHEMA_INVALID`, `REPAIR_SCHEMA_FAILED`, 424 tokens de prompt, 271 de completion, limite 768, `STOP`, 6,9 s.
+- Resultado final: `EDITORIAL_DRAFT_GENERATION_FAILED`; nenhum rascunho ou solicitação de decisão foi criado (`editorial_drafts=0`, `editorial_human_decision_requests=0`), Telegram não foi enviado e publicação permaneceu `SKIPPED`.

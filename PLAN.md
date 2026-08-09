@@ -15,7 +15,8 @@
 - [x] Executar a única nova homologação autorizada, limitada a duas chamadas.
 - [x] Extrair o executor WebMCP para CLI rastreado e remover lógica operacional do `_scratch/`.
 - [x] Cobrir ReferenceError, reparo limitado, zero persistência em falha e persistência única em sucesso.
+- [x] Executar a homologação pelo executor rastreado, limitada a duas chamadas e sem persistir saída inválida.
 - [ ] Persistir exatamente um rascunho válido e enviar uma mensagem ao Telegram.
 - [ ] Parar aguardando decisão humana; manter publicação `SKIPPED`.
 
-Resultado anterior: a rodada consumiu uma chamada e falhou por ReferenceError no executor temporário; não houve persistência nem Telegram. O executor foi corrigido, rastreado e testado. A nova homologação fica limitada a duas chamadas.
+Resultado: o executor rastreado foi validado com 366/366 testes e a homologação consumiu duas chamadas. A geração inicial falhou por tamanho/qualificador; o reparo direcionado falhou no schema. Não houve persistência nem Telegram.
