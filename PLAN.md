@@ -16,4 +16,4 @@
 - [ ] Persistir exatamente um rascunho válido e enviar uma mensagem ao Telegram.
 - [ ] Parar aguardando decisão humana; manter publicação `SKIPPED`.
 
-Resultado: a rodada consumiu uma chamada e falhou na validação final antes do reparo; não houve persistência nem Telegram. Não realizar novas chamadas nesta etapa.
+Resultado: a rodada consumiu uma chamada e falhou na validação final antes do reparo; não houve persistência nem Telegram. A causa downstream agora é preservada como diagnóstico interno seguro, sem repetir a chamada nesta etapa.

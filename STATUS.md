@@ -22,3 +22,6 @@
 - Confirmação PostgreSQL: `editorial_drafts=0` e `editorial_human_decision_requests=0` para o item WebMCP.
 - Persistência/Telegram: zero. PostgreSQL permanece sem novo rascunho ou solicitação para WebMCP.
 - Publicação: bloqueada (`PUBLICATION_ENABLED=false`); nenhuma nova chamada deve ser feita nesta etapa.
+- Correção pós-homologação: `EditorialDraftWorkflowService` recalcula a validação final de drafts bloqueados e propaga diagnóstico interno sanitizado (`FINAL_VALIDATION`/`UNSUPPORTED_QUALIFIER` ou `FINAL_VALIDATION_FAILED`) mantendo a mensagem externa genérica; nenhum estado é persistido.
+- Regressão adicionada: valida que bloqueio factual do `body` preserva código, estágio, contagem de palavras e zero chamadas à persistência.
+- Validação após correção: typecheck, build e teste do pipeline passaram; a suíte completa anterior passou 362/362 quando executada com permissão para sockets locais. Nenhuma nova chamada ao Gemma foi feita após a homologação falhar.
