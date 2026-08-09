@@ -7,7 +7,7 @@ import {
   EditorialDraftWorkflowError,
   EditorialDraftWorkflowService,
 } from "../packages/application/src/index.ts";
-import { createReceivedNews } from "../packages/content-engine/src/index.ts";
+import { ANDRE_STUDIO_VERIFICATION_POLICY_V1, createReceivedNews, evaluateVerification } from "../packages/content-engine/src/index.ts";
 
 const identityInput = { sourceId: "google-developers-blog", externalId: "post-42", canonicalUrl: "https://developers.googleblog.com/item/#fragment", contentHash: "ABC123", eventIdentity: "2026-07-25" };
 
@@ -35,5 +35,19 @@ describe("official editorial draft pipeline policy", () => {
     const news = createReceivedNews({ id: "blocked-news", source: { id: "official", name: "Official", url: "https://example.com", isOfficial: true }, title: "Blocked", originalUrl: "https://example.com/item", publishedAt: "2026-07-25T00:00:00.000Z", eventAt: "2026-07-25T00:00:00.000Z", receivedAt: "2026-07-25T00:00:00.000Z" });
     const service = new EditorialDraftWorkflowService({ loadContext: async () => ({ news, verification: { verificationId: "v", newsId: news.id, status: "CONFIRMED", editorialDecision: "ALLOW_DRAFT_GENERATION", confidence: 100, confidenceBreakdown: { claimCoverage: 100, authority: 100, dateQuality: 100, contradictionPenalty: 0 }, policyId: "p", policyVersion: "v1", evaluatedAt: news.receivedAt, claims: [], evidenceSummary: { total: 0, supporting: 0, contradicting: 0 }, warnings: [], blockingReasons: [] }, claims: [], evidence: [] }), executeAtomic: async () => { throw new Error("must not execute"); } });
     await assert.rejects(service.createDraft({ newsId: news.id, verificationId: "v", format: "LINKEDIN_SHORT_POST", idempotencyKey: "key", expectedVersion: 0, commandId: "command", approvalRequestId: "approval", actor: { type: "SYSTEM", id: "test" }, occurredAt: news.receivedAt }), (error) => error instanceof EditorialDraftWorkflowError && error.code === "EDITORIAL_DRAFT_NEWS_NOT_VERIFIED");
+  });
+  test("does not execute atomic persistence when structured generation fails", async () => {
+    const baseNews = createReceivedNews({ id: "no-partial-llm", source: { id: "official", name: "Official", url: "https://example.com", isOfficial: true }, title: "Confirmed", originalUrl: "https://example.com/item", publishedAt: "2026-07-25T00:00:00.000Z", eventAt: "2026-07-25T00:00:00.000Z", receivedAt: "2026-07-25T00:00:00.000Z" });
+    const news = { ...baseNews, state: "VERIFIED" as const };
+    const claims = [{ id: "no-partial-claim", text: "Official announced the item.", type: "PRODUCT_LAUNCH" as const, importance: "PRIMARY" as const, expectedSubject: "Item" }];
+    const evidence = [{ id: "no-partial-evidence", claimId: claims[0]!.id, sourceId: "official", canonicalUrl: "https://example.com/item", sourceAuthority: "PRIMARY_OFFICIAL" as const, evidenceType: "RELEASE_NOTE" as const, retrievedAt: baseNews.receivedAt, eventDate: baseNews.eventAt, excerpt: "Official announced the item.", structuredFacts: { announced: true }, supportsClaim: true, contradictsClaim: false }];
+    const verification = evaluateVerification({ verificationId: "no-partial-verification", newsId: news.id, claims, evidence, policy: ANDRE_STUDIO_VERIFICATION_POLICY_V1, evaluatedAt: baseNews.receivedAt });
+    let atomicCalls = 0;
+    const service = new EditorialDraftWorkflowService({
+      loadContext: async () => ({ news, verification, claims, evidence }),
+      executeAtomic: async () => { atomicCalls += 1; throw new Error("must not persist"); },
+    }, { generate: async () => { throw Object.assign(new Error("schema failure"), { code: "OLLAMA_RESPONSE_INVALID" }); } });
+    await assert.rejects(service.createDraft({ newsId: news.id, verificationId: verification.verificationId, format: "WEBSITE_NEWS_BRIEF", idempotencyKey: "no-partial-key", expectedVersion: 0, commandId: "no-partial-command", approvalRequestId: "no-partial-approval", actor: { type: "SYSTEM", id: "test" }, occurredAt: baseNews.receivedAt }), (error) => error instanceof Error && "code" in error && (error as { code?: unknown }).code === "OLLAMA_RESPONSE_INVALID");
+    assert.equal(atomicCalls, 0);
   });
 });

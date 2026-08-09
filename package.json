@@ -48,44 +48,44 @@
     "review:approve": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/review-action.ts approve",
     "review:request-changes": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/review-action.ts request-changes",
     "review:reject": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/review-action.ts reject",
-    "review:revise": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/review-action.ts revise"
-    ,"demo:review": "node apps/sistemandrestudio-api/src/demo-review.ts"
-    ,"demo:review:postgres": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/demo-review-postgres.ts",
+    "review:revise": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/review-action.ts revise",
+    "demo:review": "node apps/sistemandrestudio-api/src/demo-review.ts",
+    "demo:review:postgres": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/demo-review-postgres.ts",
     "publication:list-eligible": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/publication-cli.ts list-eligible",
     "publication:preview": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/publication-cli.ts preview",
     "publication:export": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/publication-cli.ts export",
     "publication:list": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/publication-cli.ts list",
-    "publication:show": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/publication-cli.ts show"
-    ,"demo:publication": "node apps/sistemandrestudio-api/src/demo-publication.ts"
-    ,"demo:publication:postgres": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/demo-publication-postgres.ts"
-    ,"website:list-ready": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/website-publication-cli.ts list-ready"
-    ,"website:plan": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/website-publication-cli.ts plan"
-    ,"website:plan:show": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/website-publication-cli.ts show"
-    ,"website:plan:list": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/website-publication-cli.ts list"
-    ,"website:inspect-local": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/website-publication-cli.ts inspect-local"
-    ,"demo:website-plan": "node apps/sistemandrestudio-api/src/demo-website-publication.ts"
-    ,"demo:website-plan:postgres": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/demo-website-publication-postgres.ts"
-    ,"publication:reconcile:list-ready": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/publication-reconciliation-cli.ts list-ready"
-    ,"publication:verify-public": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/publication-reconciliation-cli.ts verify-public"
-    ,"publication:reconcile": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/publication-reconciliation-cli.ts reconcile"
-    ,"publication:reconcile:show": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/publication-reconciliation-cli.ts show"
-    ,"publication:reconcile:list": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/publication-reconciliation-cli.ts list"
-    ,"demo:publication-reconciliation": "node apps/sistemandrestudio-api/src/demo-publication-reconciliation.ts"
-    ,"demo:publication-reconciliation:postgres": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/demo-publication-reconciliation-postgres.ts"
-    ,"orchestration:start": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/orchestration-cli.ts start"
-    ,"orchestration:show": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/orchestration-cli.ts show"
-    ,"orchestration:list": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/orchestration-cli.ts list"
-    ,"orchestration:pending-decisions": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/orchestration-cli.ts pending-decisions"
-    ,"orchestration:resume": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/orchestration-cli.ts resume"
-    ,"orchestration:cancel": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/orchestration-cli.ts cancel"
-    ,"orchestration:decision": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/orchestration-cli.ts decision"
-    ,"orchestration:telegram-poll-once": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/telegram-poll-once.ts"
-    ,"review:ollama-revise-existing": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/revise-ollama-existing.ts"
-    ,"radar:daily": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/daily-radar.ts"
-    ,"radar:daily:poll": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/daily-radar-poll-once.ts"
-    ,"orchestration:serve": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/orchestration-server.ts"
-    ,"demo:editorial-orchestration": "node apps/sistemandrestudio-api/src/demo-editorial-orchestration.ts"
-    ,"demo:editorial-orchestration:postgres": "node --env-file-if-exists=.env.test apps/sistemandrestudio-api/src/demo-editorial-orchestration-postgres.ts"
+    "publication:show": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/publication-cli.ts show",
+    "demo:publication": "node apps/sistemandrestudio-api/src/demo-publication.ts",
+    "demo:publication:postgres": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/demo-publication-postgres.ts",
+    "website:list-ready": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/website-publication-cli.ts list-ready",
+    "website:plan": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/website-publication-cli.ts plan",
+    "website:plan:show": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/website-publication-cli.ts show",
+    "website:plan:list": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/website-publication-cli.ts list",
+    "website:inspect-local": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/website-publication-cli.ts inspect-local",
+    "demo:website-plan": "node apps/sistemandrestudio-api/src/demo-website-publication.ts",
+    "demo:website-plan:postgres": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/demo-website-publication-postgres.ts",
+    "publication:reconcile:list-ready": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/publication-reconciliation-cli.ts list-ready",
+    "publication:verify-public": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/publication-reconciliation-cli.ts verify-public",
+    "publication:reconcile": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/publication-reconciliation-cli.ts reconcile",
+    "publication:reconcile:show": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/publication-reconciliation-cli.ts show",
+    "publication:reconcile:list": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/publication-reconciliation-cli.ts list",
+    "demo:publication-reconciliation": "node apps/sistemandrestudio-api/src/demo-publication-reconciliation.ts",
+    "demo:publication-reconciliation:postgres": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/demo-publication-reconciliation-postgres.ts",
+    "orchestration:start": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/orchestration-cli.ts start",
+    "orchestration:show": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/orchestration-cli.ts show",
+    "orchestration:list": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/orchestration-cli.ts list",
+    "orchestration:pending-decisions": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/orchestration-cli.ts pending-decisions",
+    "orchestration:resume": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/orchestration-cli.ts resume",
+    "orchestration:cancel": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/orchestration-cli.ts cancel",
+    "orchestration:decision": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/orchestration-cli.ts decision",
+    "orchestration:telegram-poll-once": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/telegram-poll-once.ts",
+    "review:ollama-revise-existing": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/revise-ollama-existing.ts",
+    "radar:daily": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/daily-radar.ts",
+    "radar:daily:poll": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/daily-radar-poll-once.ts",
+    "orchestration:serve": "node --env-file-if-exists=.env.local apps/sistemandrestudio-api/src/orchestration-server.ts",
+    "demo:editorial-orchestration": "node apps/sistemandrestudio-api/src/demo-editorial-orchestration.ts",
+    "demo:editorial-orchestration:postgres": "node --env-file-if-exists=.env.test apps/sistemandrestudio-api/src/demo-editorial-orchestration-postgres.ts"
   },
   "engines": {
     "node": ">=24.0.0"
@@ -93,5 +93,8 @@
   "devDependencies": {
     "@types/node": "^26.1.0",
     "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
   }
 }

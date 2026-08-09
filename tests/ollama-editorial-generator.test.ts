@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import { afterEach, describe, test } from "node:test";
 import {
+  EDITORIAL_OUTPUT_JSON_SCHEMA,
   OllamaEditorialTextGenerator,
   createEditorialBrief,
+  inspectWebsiteBriefOutput,
 } from "../packages/content-engine/src/index.ts";
 
 const originalFetch = globalThis.fetch;
@@ -29,16 +31,18 @@ describe("local Ollama editorial generator", () => {
     assert.equal(generated.body, "Atlas 2.0 foi anunciado oficialmente.");
     const payload = request as Record<string, unknown>;
     assert.equal(payload.model, "gemma4:e2b-it-qat");
-    assert.equal(payload.temperature, 0.2);
+    assert.equal(payload.temperature, 0);
     assert.equal(payload.max_tokens, 300);
     assert.equal(payload.reasoning_effort, "none");
-    assert.deepEqual(payload.response_format, { type: "json_object" });
+    assert.deepEqual(payload.format, EDITORIAL_OUTPUT_JSON_SCHEMA);
+    assert.equal("response_format" in payload, false);
     assert.equal("tools" in payload, false);
     const messages = payload.messages as readonly { role: string; content: string }[];
-    assert.match(messages[0]?.content ?? "", /somente um objeto JSON plano/);
-    assert.match(messages[0]?.content ?? "", /sem Markdown/);
-    assert.match(messages[0]?.content ?? "", /não escreva preview, beta, versão, disponibilidade/);
-    assert.match(messages[1]?.content ?? "", /emitOnlyJsonObject/);
+    assert.equal(messages[0]?.role, "user");
+    assert.match(messages[0]?.content ?? "", /subtitle deve ser uma frase curta em texto simples/u);
+    assert.match(messages[0]?.content ?? "", /não use qualificadores de estágio ausentes/iu);
+    assert.match(messages[0]?.content ?? "", /outputContract/);
+    assert.equal(messages.length, 1);
   });
 
   test("rejects a non-loopback provider URL", () => {
@@ -51,7 +55,7 @@ describe("local Ollama editorial generator", () => {
       const generator = new OllamaEditorialTextGenerator({ baseUrl: "http://127.0.0.1:11434/v1", model: "gemma4:e2b-it-qat" });
       await assert.rejects(
         generator.generate({ brief: brief(), format: "LINKEDIN_SHORT_POST", language: "pt-BR", tone: "informativo", maxCharacters: 600, editorialIdentityVersion: "v1" }),
-        (error: unknown) => error instanceof Error && "code" in error && (error as { code?: unknown }).code === "OLLAMA_RESPONSE_INVALID" && /subtitle must be plain text|subtitle is empty/u.test(error.message),
+        (error: unknown) => error instanceof Error && "code" in error && (error as { code?: unknown }).code === "OLLAMA_RESPONSE_INVALID" && /does not match the editorial JSON schema/u.test(error.message),
       );
     }
   });
@@ -61,7 +65,7 @@ describe("local Ollama editorial generator", () => {
     const generator = new OllamaEditorialTextGenerator({ baseUrl: "http://127.0.0.1:11434/v1", model: "gemma4:e2b-it-qat" });
     await assert.rejects(
       generator.generate({ brief: brief(), format: "LINKEDIN_SHORT_POST", language: "pt-BR", tone: "informativo", maxCharacters: 600, editorialIdentityVersion: "v1" }),
-      { code: "OLLAMA_SUBTITLE_REQUIRED" },
+      { code: "OLLAMA_RESPONSE_INVALID", message: "Local Ollama response does not match the editorial JSON schema." },
     );
   });
 
@@ -81,10 +85,11 @@ describe("local Ollama editorial generator", () => {
       body: `${Array.from({ length: 172 }, (_, index) => `palavra${index}`).join(" ")} https://example.com/atlas`,
     }) } }] }), { status: 200 });
     const generator = new OllamaEditorialTextGenerator({ baseUrl: "http://127.0.0.1:11434/v1", model: "gemma4:e2b-it-qat" });
-    await assert.rejects(
-      generator.generate({ brief: brief(), format: "WEBSITE_NEWS_BRIEF", language: "pt-BR", tone: "informativo", maxCharacters: 3_000, editorialIdentityVersion: "v1" }),
-      { code: "OLLAMA_EDITORIAL_LENGTH_INVALID" },
-    );
+    const generated = await generator.generate({ brief: brief(), format: "WEBSITE_NEWS_BRIEF", language: "pt-BR", tone: "informativo", maxCharacters: 3_000, editorialIdentityVersion: "v1" });
+    const validation = inspectWebsiteBriefOutput(generated, ["https://example.com/atlas"]);
+    assert.equal(validation.valid, false);
+    assert.deepEqual(validation.failureCodes, ["OLLAMA_EDITORIAL_LENGTH_INVALID"]);
+    assert.equal(validation.wordCount, 176);
   });
 
   test("generates one bounded evidence-only revision with 4096 context and 500 output tokens", async () => {
@@ -115,7 +120,8 @@ describe("local Ollama editorial generator", () => {
     const payload = request as Record<string, unknown>;
     assert.equal(payload.max_tokens, 500);
     assert.deepEqual(payload.options, { num_ctx: 4096 });
-    assert.equal(payload.temperature, 0.2);
+    assert.equal(payload.temperature, 0);
+    assert.deepEqual(payload.format, EDITORIAL_OUTPUT_JSON_SCHEMA);
     assert.equal("tools" in payload, false);
   });
 
@@ -131,7 +137,39 @@ describe("local Ollama editorial generator", () => {
     const payload = request as Record<string, unknown>;
     assert.equal(payload.max_tokens, 160);
     assert.deepEqual(payload.options, { num_ctx: 4096 });
-    assert.equal(payload.temperature, 0.2);
+    assert.equal(payload.temperature, 0);
     assert.equal("tools" in payload, false);
+  });
+
+  test("repairs a valid structured object using only exact failures and word delta", async () => {
+    const requests: Record<string, unknown>[] = [];
+    globalThis.fetch = async (_input, init) => {
+      requests.push(JSON.parse(String(init?.body)) as Record<string, unknown>);
+      const count = requests.length;
+      const body = count === 1
+        ? `${Array.from({ length: 170 }, (_, index) => `palavra${index}`).join(" ")}`
+        : `${Array.from({ length: 185 }, (_, index) => `palavra${index}`).join(" ")}`;
+      return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ title: "Atlas 2.0", subtitle: "Resumo factual simples.", body }) } }] }), { status: 200 });
+    };
+    const generator = new OllamaEditorialTextGenerator({ baseUrl: "http://127.0.0.1:11434/v1", model: "gemma4:e2b-it-qat" });
+    const input = { brief: brief(), format: "WEBSITE_NEWS_BRIEF" as const, language: "pt-BR" as const, tone: "informativo" as const, maxCharacters: 3_000, editorialIdentityVersion: "v1" };
+    const first = await generator.generate(input);
+    const firstValidation = inspectWebsiteBriefOutput(first, ["https://example.com/atlas"]);
+    assert.equal(firstValidation.valid, false);
+    const repaired = await generator.repairWebsiteBrief({ original: input, previous: first, failureCodes: firstValidation.failureCodes, wordCount: firstValidation.wordCount, wordDelta: firstValidation.wordDelta });
+    assert.equal(inspectWebsiteBriefOutput(repaired, ["https://example.com/atlas"]).valid, true);
+    assert.equal(requests.length, 2);
+    const repairUser = JSON.parse(String((requests[1]?.messages as readonly { content: string }[])[0]?.content));
+    assert.deepEqual(repairUser.failureCodes, ["OLLAMA_EDITORIAL_LENGTH_INVALID"]);
+    assert.equal(repairUser.wordDelta, 4);
+    assert.equal(requests[1]?.temperature, 0);
+  });
+
+  test("does not repair an invalid JSON object and never persists from the adapter", async () => {
+    let calls = 0;
+    globalThis.fetch = async () => { calls += 1; return new Response(JSON.stringify({ choices: [{ message: { content: "not-json" } }] }), { status: 200 }); };
+    const generator = new OllamaEditorialTextGenerator({ baseUrl: "http://127.0.0.1:11434/v1", model: "gemma4:e2b-it-qat" });
+    await assert.rejects(generator.generate({ brief: brief(), format: "WEBSITE_NEWS_BRIEF", language: "pt-BR", tone: "informativo", maxCharacters: 3_000, editorialIdentityVersion: "v1" }), { code: "OLLAMA_RESPONSE_INVALID" });
+    assert.equal(calls, 1);
   });
 });
