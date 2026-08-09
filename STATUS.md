@@ -9,5 +9,7 @@
 - Fluxo: geração estruturada, montagem determinística da fonte oficial e validação factual/quantitativa estão separados.
 - Reparo: no máximo uma segunda chamada direcionada, somente para objeto estruturado válido com falhas reparáveis; JSON inválido não é repetido.
 - Testes: suíte completa (357/357), typecheck e build passaram.
-- Nova homologação: ainda não iniciada; chamadas ao Gemma nesta etapa = 0; persistência/Telegram = 0.
-- Publicação: bloqueada (`PUBLICATION_ENABLED=false`); próximo gate é validar a saída e, somente se válida, persistir uma versão e enviar uma mensagem ao Telegram autorizado.
+- Nova homologação: duas chamadas ao Gemma foram consumidas (geração inicial + reparo direcionado); o fluxo terminou em `EDITORIAL_DRAFT_GENERATION_FAILED` após a validação determinística final.
+- Causa sanitizada: a saída estruturada foi recebida, mas não passou integralmente as regras editoriais do wrapper dentro do limite de duas chamadas. O serviço não expôs conteúdo do modelo nem códigos internos adicionais.
+- Persistência/Telegram: zero. Confirmação de leitura no PostgreSQL: `editorial_drafts=0` e `editorial_human_decision_requests=0` para o item WebMCP.
+- Publicação: bloqueada (`PUBLICATION_ENABLED=false`); nenhuma mensagem foi enviada e nenhum estado parcial foi criado.
