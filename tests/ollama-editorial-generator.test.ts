@@ -40,9 +40,30 @@ describe("local Ollama editorial generator", () => {
     assert.throws(() => new OllamaEditorialTextGenerator({ baseUrl: "https://example.com/v1", model: "gemma4:e2b-it-qat" }), { code: "LLM_BASE_URL_INVALID" });
   });
 
+  test("rejects every non-string subtitle shape", async () => {
+    for (const subtitle of [{ nested: true }, ["nested"], 42, true, null]) {
+      globalThis.fetch = async () => new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ title: "Atlas 2.0", subtitle, body: "Atlas 2.0 foi anunciado oficialmente." }) } }] }), { status: 200 });
+      const generator = new OllamaEditorialTextGenerator({ baseUrl: "http://127.0.0.1:11434/v1", model: "gemma4:e2b-it-qat" });
+      await assert.rejects(
+        generator.generate({ brief: brief(), format: "LINKEDIN_SHORT_POST", language: "pt-BR", tone: "informativo", maxCharacters: 600, editorialIdentityVersion: "v1" }),
+        (error: unknown) => error instanceof Error && "code" in error && (error as { code?: unknown }).code === "OLLAMA_RESPONSE_INVALID" && /subtitle must be plain text|subtitle is empty/u.test(error.message),
+      );
+    }
+  });
+
+  test("rejects a missing required subtitle", async () => {
+    globalThis.fetch = async () => new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ title: "Atlas 2.0", body: "Atlas 2.0 foi anunciado oficialmente." }) } }] }), { status: 200 });
+    const generator = new OllamaEditorialTextGenerator({ baseUrl: "http://127.0.0.1:11434/v1", model: "gemma4:e2b-it-qat" });
+    await assert.rejects(
+      generator.generate({ brief: brief(), format: "LINKEDIN_SHORT_POST", language: "pt-BR", tone: "informativo", maxCharacters: 600, editorialIdentityVersion: "v1" }),
+      { code: "OLLAMA_SUBTITLE_REQUIRED" },
+    );
+  });
+
   test("rejects a website brief below the safe 180-word floor", async () => {
     globalThis.fetch = async () => new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({
       title: "WebMCP anunciado",
+      subtitle: "Resumo factual curto.",
       body: `${Array.from({ length: 172 }, (_, index) => `palavra${index}`).join(" ")} https://example.com/atlas`,
     }) } }] }), { status: 200 });
     const generator = new OllamaEditorialTextGenerator({ baseUrl: "http://127.0.0.1:11434/v1", model: "gemma4:e2b-it-qat" });
