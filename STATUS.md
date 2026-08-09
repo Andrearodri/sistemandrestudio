@@ -17,7 +17,7 @@
 - Nova homologação: encerrada após uma chamada; o reparo não foi iniciado porque a falha ocorreu na validação final do serviço após o retorno estruturado.
 - Diagnóstico sanitizado da rodada: orçamento efetivo 768 tokens; prompt aproximado 689; completion 111; término `STOP`; estágio `FINAL_VALIDATION`; tentativa 1; campo `body`; código `FINAL_VALIDATION_FAILED`.
 - Limitação observada: o serviço externo preservou apenas `EDITORIAL_DRAFT_GENERATION_FAILED`; a sub-regra interna específica dessa validação downstream não foi exposta nesta execução.
-- Diagnóstico sanitizado: tentativa 1 `SCHEMA_VALID`, 56 palavras, códigos `WORD_COUNT_BELOW_MINIMUM` e `UNSUPPORTED_QUALIFIER`; tentativa 2 `SCHEMA_VALID`, 56 palavras, mesmos códigos mais `FINAL_VALIDATION_FAILED`; campo afetado: `body`.
+- Diagnóstico detalhado da sub-regra downstream não ficou disponível nessa execução porque a camada de serviço o substituía pelo erro genérico; o patch atual preserva esse diagnóstico para futuras execuções. Não foi feita nova chamada para recuperar dados.
 - Resultado externo: `EDITORIAL_DRAFT_GENERATION_FAILED`; o diagnóstico interno preservou estágio, tentativa, códigos, contagem, campo, parse/schema, duração e quantidade de chamadas, sem conteúdo do modelo.
 - Confirmação PostgreSQL: `editorial_drafts=0` e `editorial_human_decision_requests=0` para o item WebMCP.
 - Persistência/Telegram: zero. PostgreSQL permanece sem novo rascunho ou solicitação para WebMCP.
