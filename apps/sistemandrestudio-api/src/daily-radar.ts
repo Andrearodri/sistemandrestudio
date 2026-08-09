@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 
 import { EditorialWorkflowService, OfficialSourceRadarService, type EditorialOrchestrationRun, type EditorialOrchestrationStepType } from "../../../packages/application/src/index.ts";
-import { OllamaEditorialTextGenerator } from "../../../packages/content-engine/src/index.ts";
+import { createRadarEditorialProvider } from "../../../packages/content-engine/src/index.ts";
 import { DEFAULT_EVIDENCE_LIMITS, OfficialEvidenceAcquisitionService, buildDeterministicClaims } from "../../../packages/evidence/src/index.ts";
 import {
   PostgresEditorialNewsRepository, PostgresEditorialOrchestrationRepository, PostgresEvidenceAcquisitionRepository,
@@ -56,7 +56,7 @@ try {
   }
 
   const eligible = selectDailyRadarCandidates(await verifiedCandidates(startedAt), 5);
-  const generator = OllamaEditorialTextGenerator.fromEnvironment();
+  const generator = createRadarEditorialProvider();
   const summarized: (DailyRadarCandidate & { summary: string })[] = [];
   let llmCalls = 0;
   const generationTimes: number[] = [];

@@ -19,9 +19,10 @@ import {
   createEditorialFactPacket,
   findProhibitedEditorialQualifiers,
   inspectWebsiteBriefOutput,
-  OllamaEditorialTextGenerator,
+  createLongFormEditorialProvider,
   type EditorialFactPacket,
   type EditorialGeneratedText,
+  type EditorialGenerationInput,
   type EditorialGenerationDiagnostic,
   type EditorialGenerationDiagnosticCode,
   type EditorialGenerationParseResult,
@@ -75,7 +76,7 @@ export interface WebmcpHomologationResult {
 export interface WebmcpModelGenerator {
   readonly generatorVersion: string;
   readonly lastCallMetrics: OllamaCallMetrics | undefined;
-  generate(input: Parameters<OllamaEditorialTextGenerator["generate"]>[0]): Promise<EditorialGeneratedText>;
+  generate(input: EditorialGenerationInput): Promise<EditorialGeneratedText>;
   repairWebsiteBrief(input: OllamaEditorialRepairInput): Promise<EditorialGeneratedText>;
 }
 
@@ -101,7 +102,7 @@ export class WebmcpTwoCallGenerator implements WebmcpModelGenerator {
     return this.delegate.lastCallMetrics;
   }
 
-  async generate(input: Parameters<OllamaEditorialTextGenerator["generate"]>[0]): Promise<EditorialGeneratedText> {
+  async generate(input: EditorialGenerationInput): Promise<EditorialGeneratedText> {
     const started = performance.now();
     this.calls += 1;
     let result: EditorialGeneratedText;
@@ -178,7 +179,7 @@ export class WebmcpTwoCallGenerator implements WebmcpModelGenerator {
     return diagnostic;
   }
 
-  private validate(result: EditorialGeneratedText, input: Parameters<OllamaEditorialTextGenerator["generate"]>[0]) {
+  private validate(result: EditorialGeneratedText, input: EditorialGenerationInput) {
     const combined = `${result.title}\n${result.subtitle ?? ""}\n${result.body}`;
     const factPacket = createEditorialFactPacket(input.brief, this.officialUrl);
     const structural = inspectWebsiteBriefOutput(result, [this.officialUrl]);
@@ -278,7 +279,7 @@ export async function runWebmcpHomologationFromEnvironment(): Promise<WebmcpHomo
   try {
     await checkDatabaseConnection(pool);
     const item = { itemId: "source-item-0f6d6fa5a3874b606bc8fa94", officialUrl: "https://blog.cloudflare.com/webmcp/" };
-    return await runWebmcpHomologation(item, createProductionWebmcpDependencies(pool), OllamaEditorialTextGenerator.fromEnvironment());
+    return await runWebmcpHomologation(item, createProductionWebmcpDependencies(pool), createLongFormEditorialProvider());
   } finally {
     await pool.end();
   }
