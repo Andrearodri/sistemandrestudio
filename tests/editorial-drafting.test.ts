@@ -6,13 +6,17 @@ import {
   validateEditorialDraft,
 } from "../packages/content-engine/src/index.ts";
 
-function fixture(status: "confirmed" | "preview" | "missing" = "confirmed") {
+function fixture(status: "confirmed" | "preview" | "beta" | "ambiguous" | "missing" = "confirmed") {
   const news = createReceivedNews({ id: `draft-${status}`, source: { id: "official", name: "Fonte Oficial", url: "https://example.com", isOfficial: true }, title: "Orbit 2.0 foi anunciado", originalUrl: "https://example.com/orbit", publishedAt: "2026-07-24T10:00:00.000Z", eventAt: "2026-07-24T10:00:00.000Z", receivedAt: "2026-07-24T10:00:00.000Z" });
   const claims = [{ id: `claim-${status}`, text: "A Fonte Oficial anunciou o Orbit 2.0.", type: "PRODUCT_LAUNCH" as const, importance: "PRIMARY" as const, expectedSubject: "Orbit" }];
   const claim = claims[0]!;
-  const evidence = status === "missing" ? [] : [{ id: `evidence-${status}`, claimId: claim.id, sourceId: "official", canonicalUrl: "https://example.com/orbit", sourceAuthority: "PRIMARY_OFFICIAL" as const, evidenceType: "RELEASE_NOTE" as const, retrievedAt: "2026-07-24T10:00:00.000Z", eventDate: "2026-07-24T10:00:00.000Z", excerpt: status === "preview" ? "Orbit 2.0 está disponível em preview." : "A Fonte Oficial anunciou o Orbit 2.0.", structuredFacts: { availability: status === "preview" ? "preview" : "announced" }, supportsClaim: true, contradictsClaim: false }];
+  const evidence = status === "missing" ? [] : [{ id: `evidence-${status}`, claimId: claim.id, sourceId: "official", canonicalUrl: "https://example.com/orbit", sourceAuthority: "PRIMARY_OFFICIAL" as const, evidenceType: "RELEASE_NOTE" as const, retrievedAt: "2026-07-24T10:00:00.000Z", eventDate: "2026-07-24T10:00:00.000Z", excerpt: status === "preview" ? "Orbit 2.0 está disponível em preview." : status === "beta" ? "Orbit 2.0 está disponível em beta." : status === "ambiguous" ? "Orbit 2.0 está em preview ou beta." : "A Fonte Oficial anunciou o Orbit 2.0.", structuredFacts: { availability: status === "preview" ? "preview" : status === "beta" ? "beta" : status === "ambiguous" ? "preview or beta" : "announced" }, supportsClaim: true, contradictsClaim: false }];
   const verification = evaluateVerification({ verificationId: `verification-${status}`, newsId: news.id, claims, evidence, policy: ANDRE_STUDIO_VERIFICATION_POLICY_V1, evaluatedAt: "2026-07-24T10:00:00.000Z" });
   return { news, claims, evidence, verification };
+}
+
+function draftFor(brief: ReturnType<typeof createEditorialBrief>, body: string) {
+  return { draftId: "qualifier-draft", newsId: brief.newsId, briefId: brief.briefId, format: "LINKEDIN_SHORT_POST" as const, language: "pt-BR" as const, title: "Orbit anunciado", body, sourceCitations: brief.sourceReferences, warnings: [], prohibitedClaimsChecked: false, validationStatus: "BLOCKED" as const, generatorId: "test", generatorVersion: "v1", createdAt: brief.createdAt };
 }
 
 describe("controlled editorial drafting", () => {
@@ -43,6 +47,32 @@ describe("controlled editorial drafting", () => {
     const input = fixture("preview");
     const brief = createEditorialBrief({ ...input, createdAt: "2026-07-24T10:00:00.000Z" });
     assert.match(brief.allowedFacts[0]?.restrictions.join(" ") ?? "", /preview/i);
+  });
+  test("accepts only the literal preview qualifier from preview evidence", () => {
+    const input = fixture("preview");
+    const brief = createEditorialBrief({ ...input, createdAt: "2026-07-24T10:00:00.000Z" });
+    assert.match(brief.allowedFacts[0]?.restrictions.join(" ") ?? "", /Qualificador comprovado: preview/);
+    assert.equal(validateEditorialDraft(draftFor(brief, "Orbit 2.0 está em preview."), brief).status, "VALID");
+    assert.equal(validateEditorialDraft(draftFor(brief, "Orbit 2.0 está em beta."), brief).status, "BLOCKED");
+  });
+  test("accepts only the literal beta qualifier from beta evidence", () => {
+    const input = fixture("beta");
+    const brief = createEditorialBrief({ ...input, createdAt: "2026-07-24T10:00:00.000Z" });
+    assert.match(brief.allowedFacts[0]?.restrictions.join(" ") ?? "", /Qualificador comprovado: beta/);
+    assert.equal(validateEditorialDraft(draftFor(brief, "Orbit 2.0 está em beta."), brief).status, "VALID");
+    assert.equal(validateEditorialDraft(draftFor(brief, "Orbit 2.0 está em preview."), brief).status, "BLOCKED");
+  });
+  test("rejects an availability qualifier absent from evidence", () => {
+    const input = fixture("confirmed");
+    const brief = createEditorialBrief({ ...input, createdAt: "2026-07-24T10:00:00.000Z" });
+    assert.match(brief.allowedFacts[0]?.restrictions.join(" ") ?? "", /Nenhum qualificador/);
+    assert.equal(validateEditorialDraft(draftFor(brief, "Orbit 2.0 está em preview."), brief).status, "BLOCKED");
+  });
+  test("rejects the ambiguous preview-or-beta wording", () => {
+    const input = fixture("ambiguous");
+    const brief = createEditorialBrief({ ...input, createdAt: "2026-07-24T10:00:00.000Z" });
+    assert.match(brief.allowedFacts[0]?.restrictions.join(" ") ?? "", /Qualificadores conflitantes/);
+    assert.equal(validateEditorialDraft(draftFor(brief, "Orbit 2.0 está em preview ou beta."), brief).status, "BLOCKED");
   });
   test("blocks sensationalist and citation-free drafts", () => {
     const input = fixture();

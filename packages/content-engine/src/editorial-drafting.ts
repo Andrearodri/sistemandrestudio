@@ -241,6 +241,20 @@ export function validateEditorialDraft(draft: EditorialDraft, brief: EditorialBr
   if (/<\/?(?:script|style|iframe|form)\b/i.test(`${draft.title}\n${draft.body}`)) blocking.push({ code: "EDITORIAL_DRAFT_VALIDATION_FAILED", message: "HTML or script content is forbidden." });
   if (/\b(revolucion[áa]rio|vai mudar tudo|o melhor do mundo|imperd[ií]vel|ningu[eé]m est[aá] falando disso)\b/i.test(draft.title)) blocking.push({ code: "EDITORIAL_DRAFT_VALIDATION_FAILED", message: "Sensationalist title is forbidden." });
   for (const statement of brief.prohibitedStatements) if (draft.body.includes(statement)) blocking.push({ code: "EDITORIAL_DRAFT_PROHIBITED_CLAIM", message: "Draft contains a prohibited instruction." });
+  for (const fact of brief.allowedFacts) {
+    const restrictions = fact.restrictions.join(" ");
+    const textHasPreview = /\bpreview\b/i.test(`${draft.title}\n${draft.body}`);
+    const textHasBeta = /\bbeta\b/i.test(`${draft.title}\n${draft.body}`);
+    if (/Qualificadores conflitantes na evidência/i.test(restrictions)) {
+      blocking.push({ code: "EDITORIAL_DRAFT_QUALIFIER_AMBIGUOUS", message: "The evidence contains ambiguous availability qualifiers." });
+    } else if (/Nenhum qualificador de disponibilidade foi comprovado/i.test(restrictions) && (textHasPreview || textHasBeta)) {
+      blocking.push({ code: "EDITORIAL_DRAFT_QUALIFIER_UNSUPPORTED", message: "The draft adds an availability qualifier absent from the evidence." });
+    } else if (/Qualificador comprovado: preview/i.test(restrictions) && textHasBeta) {
+      blocking.push({ code: "EDITORIAL_DRAFT_QUALIFIER_MISMATCH", message: "The draft uses beta although the evidence supports only preview." });
+    } else if (/Qualificador comprovado: beta/i.test(restrictions) && textHasPreview) {
+      blocking.push({ code: "EDITORIAL_DRAFT_QUALIFIER_MISMATCH", message: "The draft uses preview although the evidence supports only beta." });
+    }
+  }
   const text = normalize(`${draft.title}\n${draft.body}`);
   for (const prohibited of brief.prohibitedClaims) if (text.includes(normalize(prohibited.originalText))) blocking.push({ code: "EDITORIAL_DRAFT_PROHIBITED_CLAIM", message: "Draft repeats a prohibited claim." });
   for (const warning of brief.warnings) warnings.push(warning);
@@ -248,7 +262,15 @@ export function validateEditorialDraft(draft: EditorialDraft, brief: EditorialBr
 }
 
 function conservativeStatement(value: string): string { return boundedText(stripUnsafe(value).replace(/\b(será|vai|melhor|revolucionário)\b/gi, ""), 500).replace(/[.!?]*$/, "."); }
-function restrictionsFor(evidence: readonly VerificationEvidence[]): readonly string[] { return evidence.some((item) => /preview|beta/i.test(`${item.excerpt ?? ""} ${JSON.stringify(item.structuredFacts)}`)) ? ["Preservar o qualificador preview ou beta; não afirmar disponibilidade geral."] : []; }
+function restrictionsFor(evidence: readonly VerificationEvidence[]): readonly string[] {
+  const text = evidence.map((item) => `${item.excerpt ?? ""} ${JSON.stringify(item.structuredFacts)}`).join(" ");
+  const hasPreview = /\bpreview\b/i.test(text);
+  const hasBeta = /\bbeta\b/i.test(text);
+  if (hasPreview && hasBeta) return ["Qualificadores conflitantes na evidência (preview e beta); o rascunho deve ser bloqueado."];
+  if (hasPreview) return ["Qualificador comprovado: preview. Preserve exatamente preview e não use beta nem alternativas."];
+  if (hasBeta) return ["Qualificador comprovado: beta. Preserve exatamente beta e não use preview nem alternativas."];
+  return ["Nenhum qualificador de disponibilidade foi comprovado pela evidência; não use preview ou beta."];
+}
 function stripUnsafe(value: string): string { return value.replace(/<[^>]*>/g, " ").replace(/(?:ignore|disregard)\s+(?:all\s+)?(?:previous\s+)?instructions?/gi, "").replace(/\s+/g, " ").trim(); }
 function boundedText(value: string, size: number): string { const cleaned = stripUnsafe(value); return cleaned.length <= size ? cleaned : `${cleaned.slice(0, Math.max(0, size - 1)).trimEnd()}…`; }
 function normalize(value: string): string { return stripUnsafe(value).toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\p{L}\p{N}]+/gu, " ").trim(); }
