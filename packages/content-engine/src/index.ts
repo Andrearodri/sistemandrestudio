@@ -10,3 +10,5 @@ export * from "./ollama-editorial-generator.ts";
 export * from "./editorial-fact-localization.ts";
 export * from "./editorial-output-schema.ts";
 export * from "./editorial-generation-diagnostics.ts";
+export * from "./editorial-generation-budget.ts";
+export * from "./editorial-fact-packet.ts";

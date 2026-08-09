@@ -12,12 +12,15 @@ export const EditorialOutputSchema = z.object({
 }).strict();
 
 export const RadarSummaryOutputSchema = EditorialOutputSchema.pick({ title: true, body: true }).strict();
+export const EditorialBodyRepairSchema = EditorialOutputSchema.pick({ body: true }).strict();
 
 export type EditorialOutput = z.infer<typeof EditorialOutputSchema>;
 export type RadarSummaryOutput = z.infer<typeof RadarSummaryOutputSchema>;
+export type EditorialBodyRepair = z.infer<typeof EditorialBodyRepairSchema>;
 
 export const EDITORIAL_OUTPUT_JSON_SCHEMA = z.toJSONSchema(EditorialOutputSchema, { target: "draft-2020-12" }) as Record<string, unknown>;
 export const RADAR_SUMMARY_OUTPUT_JSON_SCHEMA = z.toJSONSchema(RadarSummaryOutputSchema, { target: "draft-2020-12" }) as Record<string, unknown>;
+export const EDITORIAL_BODY_REPAIR_JSON_SCHEMA = z.toJSONSchema(EditorialBodyRepairSchema, { target: "draft-2020-12" }) as Record<string, unknown>;
 
 export const EDITORIAL_OUTPUT_SCHEMA_SUMMARY = JSON.stringify({
   type: "object",

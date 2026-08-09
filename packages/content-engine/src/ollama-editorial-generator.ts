@@ -2,9 +2,18 @@ import { z } from "zod";
 
 import type { EditorialGeneratedText, EditorialGenerationInput, EditorialTextGenerator } from "./editorial-drafting.ts";
 import {
+  approximateTokenCount,
+  RADAR_SUMMARY_GENERATION_BUDGET,
+  WEBSITE_EDITORIAL_GENERATION_BUDGET,
+} from "./editorial-generation-budget.ts";
+import type { EditorialFactPacket } from "./editorial-fact-packet.ts";
+import { createEditorialFactPacket } from "./editorial-fact-packet.ts";
+import {
+  EDITORIAL_BODY_REPAIR_JSON_SCHEMA,
   EDITORIAL_OUTPUT_JSON_SCHEMA,
   EDITORIAL_OUTPUT_SCHEMA_SUMMARY,
   EditorialOutputSchema,
+  EditorialBodyRepairSchema,
   RADAR_SUMMARY_OUTPUT_JSON_SCHEMA,
   RadarSummaryOutputSchema,
   type EditorialOutput,
@@ -40,10 +49,19 @@ export interface OllamaEditorialRepairInput {
   readonly failureCodes: readonly string[];
   readonly wordCount: number;
   readonly wordDelta: number;
+  readonly factPacket: EditorialFactPacket;
+}
+
+export interface OllamaCallMetrics {
+  readonly promptTokenCount: number;
+  readonly completionTokenCount: number;
+  readonly effectiveOutputLimit: number;
+  readonly terminationReason: "STOP" | "OUTPUT_LIMIT" | "ERROR" | "UNKNOWN";
 }
 
 interface OllamaResponse {
-  readonly choices?: readonly { readonly message?: { readonly content?: unknown } }[];
+  readonly choices?: readonly { readonly message?: { readonly content?: unknown }; readonly finish_reason?: string | null }[];
+  readonly usage?: { readonly prompt_tokens?: number; readonly completion_tokens?: number };
 }
 
 interface WebsiteBriefValidationResult {
@@ -71,6 +89,7 @@ export class OllamaEditorialTextGenerator implements EditorialTextGenerator {
   readonly generatorVersion: string;
   readonly #endpoint: string;
   readonly #timeoutMs: number;
+  lastCallMetrics: OllamaCallMetrics | undefined;
 
   constructor(config: OllamaEditorialGeneratorConfig) {
     const url = localOllamaBaseUrl(config.baseUrl);
@@ -92,6 +111,8 @@ export class OllamaEditorialTextGenerator implements EditorialTextGenerator {
     if (input.brief.editorialEligibility !== "ALLOW_DRAFT" || input.brief.allowedFacts.length === 0) {
       throw new OllamaEditorialGeneratorError("EDITORIAL_DRAFT_NOT_ELIGIBLE", "Only confirmed factual briefs may be sent to the local model.");
     }
+    const factPacket = createEditorialFactPacket(input.brief);
+    const outputBudget = input.format === "WEBSITE_NEWS_BRIEF" ? WEBSITE_EDITORIAL_GENERATION_BUDGET.outputTokens : 300;
     const generated = await this.#complete([
       {
         role: "user",
@@ -114,10 +135,11 @@ export class OllamaEditorialTextGenerator implements EditorialTextGenerator {
           restrictions: input.brief.prohibitedStatements,
           requiredDisclosures: input.brief.requiredDisclosures,
           citations: input.brief.sourceReferences.map((citation) => citation.canonicalUrl),
-          websiteLengthGuidance: input.format === "WEBSITE_NEWS_BRIEF" ? "O body final deve ter entre 180 e 300 palavras; mire 220 a 240." : undefined,
+          factPacket,
+          websiteLengthGuidance: input.format === "WEBSITE_NEWS_BRIEF" ? `O body final deve ter entre ${WEBSITE_EDITORIAL_GENERATION_BUDGET.minimumWords} e ${WEBSITE_EDITORIAL_GENERATION_BUDGET.maximumWords} palavras; mire ${WEBSITE_EDITORIAL_GENERATION_BUDGET.targetMinimumWords} a ${WEBSITE_EDITORIAL_GENERATION_BUDGET.targetMaximumWords}. O limite de saída é separado do resumo curto.` : undefined,
         }),
       },
-    ], input.maxCharacters, 300, EditorialOutputSchema, EDITORIAL_OUTPUT_JSON_SCHEMA) as EditorialOutput;
+    ], input.maxCharacters, outputBudget, EditorialOutputSchema, EDITORIAL_OUTPUT_JSON_SCHEMA) as EditorialOutput;
     return assembleEditorialText(generated, input);
   }
 
@@ -136,18 +158,22 @@ export class OllamaEditorialTextGenerator implements EditorialTextGenerator {
             "Retorne somente um objeto JSON plano no schema; subtitle deve continuar sendo string simples.",
             "Não invente qualquer informação nem adicione preview, beta, versão, disponibilidade, preço ou experiência prática sem evidência literal.",
           ],
-          schema: EDITORIAL_OUTPUT_SCHEMA_SUMMARY,
-          outputContract: EDITORIAL_OUTPUT_JSON_SCHEMA,
-          previousDraft: input.previous,
+          schema: EDITORIAL_BODY_REPAIR_JSON_SCHEMA,
+          outputContract: EDITORIAL_BODY_REPAIR_JSON_SCHEMA,
+          previousFields: { title: input.previous.title, subtitle: input.previous.subtitle },
           failureCodes: input.failureCodes,
           currentWordCount: input.wordCount,
           wordDelta: input.wordDelta,
-          preserveFacts: input.original.brief.allowedFacts,
+          factPacket: input.factPacket,
           citations: input.original.brief.sourceReferences.map((citation) => citation.canonicalUrl),
         }),
       },
-    ], input.original.maxCharacters, 300, EditorialOutputSchema, EDITORIAL_OUTPUT_JSON_SCHEMA) as EditorialOutput;
-    return assembleEditorialText(generated, input.original);
+    ], input.original.maxCharacters, WEBSITE_EDITORIAL_GENERATION_BUDGET.outputTokens, EditorialBodyRepairSchema, EDITORIAL_BODY_REPAIR_JSON_SCHEMA) as { body: string };
+    const officialUrl = input.original.brief.sourceReferences.map((citation) => citation.canonicalUrl).find((url) => url.startsWith("https://"));
+    const body = input.original.format === "WEBSITE_NEWS_BRIEF" && officialUrl && !generated.body.includes(officialUrl)
+      ? `${generated.body}\n\nFonte oficial: ${officialUrl}`
+      : generated.body;
+    return { title: input.previous.title, ...(input.previous.subtitle === undefined ? {} : { subtitle: input.previous.subtitle }), body };
   }
 
   async generateRevision(input: OllamaEditorialRevisionInput): Promise<EditorialGeneratedText> {
@@ -203,7 +229,7 @@ export class OllamaEditorialTextGenerator implements EditorialTextGenerator {
           input,
         }),
       },
-    ], 600, 160, RadarSummaryOutputSchema, RADAR_SUMMARY_OUTPUT_JSON_SCHEMA);
+    ], 600, RADAR_SUMMARY_GENERATION_BUDGET.outputTokens, RadarSummaryOutputSchema, RADAR_SUMMARY_OUTPUT_JSON_SCHEMA);
     return generated.body;
   }
 
@@ -223,15 +249,25 @@ export class OllamaEditorialTextGenerator implements EditorialTextGenerator {
         stream: false,
         temperature: 0,
         max_tokens: maximumTokens,
-        options: { num_ctx: 4096 },
+        options: { num_ctx: WEBSITE_EDITORIAL_GENERATION_BUDGET.contextTokens, num_predict: maximumTokens },
         reasoning_effort: "none",
         format: schemaJson,
         messages,
       }),
     });
-    if (!response.ok) throw new OllamaEditorialGeneratorError("OLLAMA_REQUEST_FAILED", `Local Ollama returned HTTP ${response.status}.`);
+    if (!response.ok) {
+      this.lastCallMetrics = { promptTokenCount: approximateTokenCount(messages.map((message) => message.content).join("\n")), completionTokenCount: 0, effectiveOutputLimit: maximumTokens, terminationReason: "ERROR" };
+      throw new OllamaEditorialGeneratorError("OLLAMA_REQUEST_FAILED", `Local Ollama returned HTTP ${response.status}.`);
+    }
     const payload = await response.json() as OllamaResponse;
     const content = payload.choices?.[0]?.message?.content;
+    const finishReason = payload.choices?.[0]?.finish_reason;
+    this.lastCallMetrics = {
+      promptTokenCount: payload.usage?.prompt_tokens ?? approximateTokenCount(messages.map((message) => message.content).join("\n")),
+      completionTokenCount: payload.usage?.completion_tokens ?? (typeof content === "string" ? approximateTokenCount(content) : 0),
+      effectiveOutputLimit: maximumTokens,
+      terminationReason: finishReason === "length" ? "OUTPUT_LIMIT" : finishReason === "stop" ? "STOP" : typeof content === "string" ? "UNKNOWN" : "ERROR",
+    };
     if (typeof content !== "string") throw new OllamaEditorialGeneratorError("OLLAMA_RESPONSE_INVALID", "Local Ollama returned no textual completion.");
     return parseGeneratedText(content, schema);
   }
@@ -280,7 +316,8 @@ function parseGeneratedText(value: string, schema: z.ZodType): EditorialGenerate
   try { parsed = JSON.parse(normalized); } catch { throw new OllamaEditorialGeneratorError("OLLAMA_RESPONSE_INVALID", "Local Ollama must return one JSON object without surrounding text."); }
   const result = schema.safeParse(parsed);
   if (!result.success) throw new OllamaEditorialGeneratorError("OLLAMA_RESPONSE_INVALID", "Local Ollama response does not match the editorial JSON schema.");
-  const output = result.data as EditorialOutput | { title: string; body: string };
-  if (!("subtitle" in output)) return { title: output.title, body: output.body };
+  const output = result.data as EditorialOutput | { title: string; body: string } | { body: string };
+  if ("title" in output && !("subtitle" in output)) return { title: output.title, body: output.body };
+  if (!("title" in output)) return { title: "", body: output.body };
   return { title: output.title, subtitle: output.subtitle, body: output.body };
 }

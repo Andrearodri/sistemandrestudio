@@ -15,6 +15,7 @@ export type EditorialGenerationDiagnosticCode = typeof EDITORIAL_GENERATION_DIAG
 export type EditorialGenerationDiagnosticStage = "INITIAL_GENERATION" | "DIRECTED_REPAIR" | "FINAL_VALIDATION";
 export type EditorialGenerationParseResult = "NOT_RUN" | "VALID_JSON" | "INVALID_JSON" | "SCHEMA_VALID" | "SCHEMA_INVALID";
 export type EditorialGenerationField = "title" | "subtitle" | "body";
+export type EditorialGenerationTerminationReason = "STOP" | "OUTPUT_LIMIT" | "ERROR" | "UNKNOWN";
 
 export interface EditorialGenerationDiagnostic {
   readonly stage: EditorialGenerationDiagnosticStage;
@@ -25,6 +26,10 @@ export interface EditorialGenerationDiagnostic {
   readonly parseResult: EditorialGenerationParseResult;
   readonly durationMs: number;
   readonly callCount: number;
+  readonly promptTokenCount?: number;
+  readonly completionTokenCount?: number;
+  readonly effectiveOutputLimit?: number;
+  readonly terminationReason?: EditorialGenerationTerminationReason;
 }
 
 export class EditorialGenerationDiagnosticError extends Error {
@@ -54,5 +59,9 @@ export function sanitizeDiagnostic(input: EditorialGenerationDiagnostic): Editor
     parseResult: input.parseResult,
     durationMs: Math.max(0, Math.floor(input.durationMs)),
     callCount: Math.max(0, Math.floor(input.callCount)),
+    ...(input.promptTokenCount === undefined ? {} : { promptTokenCount: Math.max(0, Math.floor(input.promptTokenCount)) }),
+    ...(input.completionTokenCount === undefined ? {} : { completionTokenCount: Math.max(0, Math.floor(input.completionTokenCount)) }),
+    ...(input.effectiveOutputLimit === undefined ? {} : { effectiveOutputLimit: Math.max(0, Math.floor(input.effectiveOutputLimit)) }),
+    ...(input.terminationReason === undefined ? {} : { terminationReason: input.terminationReason }),
   };
 }

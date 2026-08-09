@@ -8,12 +8,12 @@ import {
 describe("editorial generation diagnostics", () => {
   test("preserves allow-listed initial and repair codes with safe metrics", () => {
     const error = new EditorialGenerationDiagnosticError([
-      { stage: "INITIAL_GENERATION", attempt: 1, codes: ["INITIAL_CONTENT_REJECTED", "WORD_COUNT_BELOW_MINIMUM"], wordCount: 174, fields: ["body"], parseResult: "SCHEMA_VALID", durationMs: 91.9, callCount: 1 },
-      { stage: "DIRECTED_REPAIR", attempt: 2, codes: ["REPAIR_CONTENT_REJECTED", "WORD_COUNT_ABOVE_MAXIMUM"], wordCount: 301, fields: ["body"], parseResult: "SCHEMA_VALID", durationMs: 102.4, callCount: 2 },
+      { stage: "INITIAL_GENERATION", attempt: 1, codes: ["INITIAL_CONTENT_REJECTED", "WORD_COUNT_BELOW_MINIMUM"], wordCount: 174, fields: ["body"], parseResult: "SCHEMA_VALID", durationMs: 91.9, callCount: 1, promptTokenCount: 220, completionTokenCount: 380, effectiveOutputLimit: 768, terminationReason: "STOP" },
+      { stage: "DIRECTED_REPAIR", attempt: 2, codes: ["REPAIR_CONTENT_REJECTED", "WORD_COUNT_ABOVE_MAXIMUM"], wordCount: 301, fields: ["body"], parseResult: "SCHEMA_VALID", durationMs: 102.4, callCount: 2, promptTokenCount: 250, completionTokenCount: 401, effectiveOutputLimit: 768, terminationReason: "OUTPUT_LIMIT" },
     ]);
     assert.deepEqual(error.diagnostics, [
-      { stage: "INITIAL_GENERATION", attempt: 1, codes: ["INITIAL_CONTENT_REJECTED", "WORD_COUNT_BELOW_MINIMUM"], wordCount: 174, fields: ["body"], parseResult: "SCHEMA_VALID", durationMs: 91, callCount: 1 },
-      { stage: "DIRECTED_REPAIR", attempt: 2, codes: ["REPAIR_CONTENT_REJECTED", "WORD_COUNT_ABOVE_MAXIMUM"], wordCount: 301, fields: ["body"], parseResult: "SCHEMA_VALID", durationMs: 102, callCount: 2 },
+      { stage: "INITIAL_GENERATION", attempt: 1, codes: ["INITIAL_CONTENT_REJECTED", "WORD_COUNT_BELOW_MINIMUM"], wordCount: 174, fields: ["body"], parseResult: "SCHEMA_VALID", durationMs: 91, callCount: 1, promptTokenCount: 220, completionTokenCount: 380, effectiveOutputLimit: 768, terminationReason: "STOP" },
+      { stage: "DIRECTED_REPAIR", attempt: 2, codes: ["REPAIR_CONTENT_REJECTED", "WORD_COUNT_ABOVE_MAXIMUM"], wordCount: 301, fields: ["body"], parseResult: "SCHEMA_VALID", durationMs: 102, callCount: 2, promptTokenCount: 250, completionTokenCount: 401, effectiveOutputLimit: 768, terminationReason: "OUTPUT_LIMIT" },
     ]);
   });
 
