@@ -1,5 +1,7 @@
 # Status da homologação WebMCP
 
+Infraestrutura: ver [plano de migração AWS → Docker local](docs/AWS-TO-LOCAL-MIGRATION.md) e registro ao final deste arquivo.
+
 - Branch: `feat/local-llm-gemma4`.
 - Item: WebMCP, estado `VERIFIED` / `CONFIRMED`.
 - Publicação: bloqueada (`PUBLICATION_ENABLED=false`).
@@ -45,3 +47,60 @@
 - `npm run typecheck`, `npm run build`, os testes específicos do provedor e a suíte completa passaram (`373/373`).
 - A criação do provedor por ambiente exige `OPENAI_HARD_SPEND_LIMIT_USD=1` além de `OPENAI_API_KEY`; sem essa confirmação a chamada é bloqueada antes do SDK.
 - Homologação real não executada: `OPENAI_API_KEY` está ausente no ambiente local e o hard spend limit mensal de US$1 ainda não foi confirmado. Nenhuma chamada OpenAI/Gemma, persistência, Telegram ou publicação foi realizada nesta etapa.
+
+## Migração AWS → Docker local — 08/09/2026
+
+- Plano operacional documentado e execução local concluída para o escopo definido.
+- Conforme inspeção da sessão: EC2 encerrada e suporte alterado para Basic. Os recursos AWS desta carga foram removidos na região `sa-east-1`; faturas anteriores e eventuais serviços em outras regiões permanecem sujeitos à conferência.
+- Compose local contém PostgreSQL e API editorial. Inventário dos volumes locais foi concluído e os backups compactados tiveram SHA-256 verificado.
+- CRM depende de Supabase; recuperar aplicação e banco editorial não basta para executar tudo localmente. Dimensionamento do Mac depende dessa composição e de eventual modelo local.
+- Próximo passo: operar e medir o núcleo editorial local, mantendo automações externas desligadas.
+- Critério aplicado à remoção AWS: dados locais preservados e verificados, inventário exato e autorização específica. Publicação permanece bloqueada; esta etapa não muda provedor LLM.
+- Execução em 08/09: backup compactado dos seis volumes locais em `_scratch/aws-to-local-2026-09-08/volumes/`, verificado por [SHA256SUMS](_scratch/aws-to-local-2026-09-08/volumes/SHA256SUMS); PostgreSQL editorial iniciou saudável com 45 tabelas e a API reconstruída respondeu `{"ok":true}` em `127.0.0.1:4317/healthz`.
+- Execução em 08/09: os oito containers antigos parados foram removidos; volumes e imagens foram preservados. Foi criado `compose.automacao-wattszap.local.yaml` para portas loopback e `restart: no`.
+- Execução em 08/09: PostgreSQL 15 da automação (`127.0.0.1:55433`) aceitou conexão e expôs 31 tabelas; Redis (`127.0.0.1:56379`) respondeu `PONG` e não tinha chaves.
+- Execução em 08/09: após a validação, PostgreSQL/Redis da automação foram parados; containers e volumes permanecem disponíveis para uma futura ativação.
+- Execução em 08/09: banco editorial local registra 16 migrações aplicadas até `016_editorial_orchestration_integrity.sql`; nenhuma migração destrutiva foi executada.
+- Pendência operacional: n8n/Evolution API continuam desligados para evitar webhooks ou mensagens externas. O CRM WACRM não tem `.env.local`; faltam `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `ENCRYPTION_KEY` e `META_APP_SECRET` para uma execução funcional.
+- Execução AWS concluída em 08/09: a EC2 `i-042b6be73bf131c23` foi encerrada; o volume raiz `vol-054648b90786aa297` foi removido automaticamente pela política de exclusão no encerramento; o snapshot `snap-0746d1eed3238fb3e` foi excluído após confirmação explícita; e o IPv4 `52.67.160.253` (`eipalloc-044cdd8f3f54cf5ae`) foi desassociado e liberado.
+- Verificação pós-remoção em `sa-east-1`: nenhum volume EBS, snapshot ou IPv4 elástico listado para esta carga; a instância aparece apenas como `Encerrado` no histórico. A atualização de cobrança pode ocorrer depois da remoção; isso não cancela valores já faturados nem comprova ausência de outros serviços AWS.
+- RAM observada no pico após quatro containers: API 39,4 MiB, PostgreSQL editorial 43,6 MiB, PostgreSQL automação 25,7 MiB e Redis 12,3 MiB. Agora somente API/PostgreSQL editorial estão ativos. Docker Desktop reserva 7,75 GiB; Mac reportou 3,51 GiB usados e 4,0 GiB de swap.
+- Decisão de escopo: o CRM será apresentado somente como imagem/demonstração comercial no site. Não será executado nem receberá banco, Supabase, Meta ou credenciais nesta fase.
+
+## Fechamento documental da migração — 09/09/2026
+
+### AWS
+
+- EC2 `i-042b6be73bf131c23` encerrada.
+- Volume EBS raiz removido; snapshot antigo removido; IPv4/EIP liberado.
+- `SAE1-PublicIPv4:InUseAddress` / `AssociateAddressVPC` de US$ 0,87 é cobrança histórica; não há recurso ativo correspondente.
+- Business Support+ de US$ 29 pertence ao período corrente; o plano atual é Basic Support.
+- Nenhum recurso AWS cobrável ativo da infraestrutura antiga foi identificado. As cobranças remanescentes são históricas/residuais e podem ser consolidadas pelo Billing.
+
+### Ambiente local
+
+- Docker `29.6.2`.
+- API saudável em `127.0.0.1:4317`.
+- PostgreSQL saudável em `127.0.0.1:55432`.
+- Banco editorial com aproximadamente 45 tabelas.
+- Volume `sistemandrestudio_postgres_data` preservado.
+
+### Automação antiga `automacao-wattszap`
+
+- Stack parada e preservada.
+- Volumes de PostgreSQL, n8n, Evolution API e Redis preservados.
+- Não executar `docker system prune`.
+- `.env` com permissão `600` e protegido pelo `.gitignore`.
+- Secrets hard-coded removidos; `.env.example` criado.
+- `AUTHENTICATION_API_KEY` e `N8N_RUNNERS_AUTH_TOKEN` rotacionados.
+- A senha do PostgreSQL antigo permanece pendente e só deve ser rotacionada em futura janela controlada de reativação.
+- Nenhum container antigo foi iniciado nesta etapa.
+
+### Estado final
+
+- `Migração técnica AWS → local: CONCLUÍDA`
+- `Dependência operacional da AWS: NENHUMA IDENTIFICADA`
+- `Geração de novos custos da infraestrutura antiga: ENCERRADA`
+- `Billing residual: AGUARDANDO CONSOLIDAÇÃO DO PERÍODO`
+- `Dados Docker antigos: PRESERVADOS`
+- `Automação antiga: DESATIVADA / PRESERVADA`
