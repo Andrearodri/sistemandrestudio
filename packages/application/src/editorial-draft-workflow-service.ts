@@ -2,9 +2,12 @@ import { createHash } from "node:crypto";
 import {
   createEditorialBrief,
   generateEditorialDraft,
+  sanitizeDiagnostic,
+  validateEditorialDraft,
 } from "../../content-engine/src/index.ts";
 import type {
   EditorialBrief, EditorialDraft, EditorialFormat, EditorialTextGenerator,
+  EditorialGenerationDiagnostic,
   FactualVerificationResult, VerificationClaim, VerificationEvidence,
 } from "../../content-engine/src/index.ts";
 import type { EditorialNews } from "../../content-engine/src/index.ts";
@@ -40,7 +43,8 @@ export interface EditorialDraftUnitOfWork {
 }
 export class EditorialDraftWorkflowError extends Error {
   readonly code: string;
-  constructor(code: string, message: string) { super(message); this.name = "EditorialDraftWorkflowError"; this.code = code; }
+  readonly diagnostics: readonly EditorialGenerationDiagnostic[] | undefined;
+  constructor(code: string, message: string, diagnostics?: readonly EditorialGenerationDiagnostic[]) { super(message); this.name = "EditorialDraftWorkflowError"; this.code = code; this.diagnostics = diagnostics; }
 }
 export class EditorialDraftWorkflowService {
   readonly #unitOfWork: EditorialDraftUnitOfWork;
@@ -60,8 +64,27 @@ export class EditorialDraftWorkflowService {
     if (brief.editorialEligibility !== "ALLOW_DRAFT") throw new EditorialDraftWorkflowError("EDITORIAL_DRAFT_NOT_ELIGIBLE", "The factual result is not eligible for a normal draft.");
     let draft: EditorialDraft;
     try { draft = await generateEditorialDraft({ brief, format: input.format, language: "pt-BR", tone: "informativo", maxCharacters: 3000, editorialIdentityVersion: "andrestudio-dev-v1" }, this.#generator); }
-    catch (error) { if (error instanceof Error && "code" in error) throw error; throw new EditorialDraftWorkflowError("EDITORIAL_DRAFT_GENERATION_FAILED", "Deterministic generation failed."); }
-    if (draft.validationStatus === "BLOCKED") throw new EditorialDraftWorkflowError("EDITORIAL_DRAFT_VALIDATION_FAILED", "Generated draft was blocked by the deterministic validator.");
+    catch (error) {
+      if (error instanceof Error && "diagnostics" in error && Array.isArray((error as { diagnostics?: unknown }).diagnostics)) {
+        throw new EditorialDraftWorkflowError("EDITORIAL_DRAFT_GENERATION_FAILED", "Deterministic generation failed.", (error as { diagnostics: readonly EditorialGenerationDiagnostic[] }).diagnostics);
+      }
+      throw new EditorialDraftWorkflowError("EDITORIAL_DRAFT_GENERATION_FAILED", "Deterministic generation failed.");
+    }
+    if (draft.validationStatus === "BLOCKED") {
+      const validation = validateEditorialDraft(draft, brief, 3000);
+      const qualifierBlocked = validation.blockingReasons.some((reason) => /QUALIFIER|QUALIFICADOR/iu.test(reason.code));
+      const diagnostic = sanitizeDiagnostic({
+        stage: "FINAL_VALIDATION",
+        attempt: 1,
+        codes: [qualifierBlocked ? "UNSUPPORTED_QUALIFIER" : "FINAL_VALIDATION_FAILED"],
+        wordCount: draft.body.match(/[\p{L}\p{N}]+(?:[-'][\p{L}\p{N}]+)*/gu)?.length ?? 0,
+        fields: ["body"],
+        parseResult: "SCHEMA_VALID",
+        durationMs: 0,
+        callCount: 0,
+      });
+      throw new EditorialDraftWorkflowError("EDITORIAL_DRAFT_VALIDATION_FAILED", "Generated draft was blocked by the deterministic validator.", [diagnostic]);
+    }
     return this.#unitOfWork.executeAtomic({ input, brief, draft, fingerprint: fingerprint({ input, briefId: brief.briefId, draftId: draft.draftId }) });
   }
 }

@@ -7,6 +7,7 @@ import type {
   EvidenceAcquisitionInput,
   ExtractedOfficialPage,
 } from "./types.ts";
+import type { VerificationClaim } from "../../content-engine/src/index.ts";
 
 export const EVIDENCE_IDENTITY_VERSION = "evidence-content-identity-v1";
 
@@ -21,6 +22,7 @@ export function deriveEvidenceContentIdentity(input: {
   readonly pages: readonly ExtractedOfficialPage[];
   readonly acquisitionPolicyVersion: string;
   readonly sourcePolicyVersion: string;
+  readonly claims?: readonly VerificationClaim[];
 }): EvidenceContentIdentity {
   const pages = input.pages
     .map((page) => ({
@@ -41,6 +43,11 @@ export function deriveEvidenceContentIdentity(input: {
       canonicalUrl: canonicalUrl(input.canonicalUrl),
       acquisitionPolicyVersion: input.acquisitionPolicyVersion,
       sourcePolicyVersion: input.sourcePolicyVersion,
+      claims: (input.claims ?? []).map((claim) => ({
+        text: claim.text,
+        type: claim.type,
+        expectedSubject: claim.expectedSubject,
+      })),
       pages,
     })),
   };

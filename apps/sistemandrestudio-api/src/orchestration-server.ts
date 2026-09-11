@@ -92,6 +92,11 @@ export function createOrchestrationHttpServer(
     const requestId = requestIdFrom(request);
     const method = request.method ?? "";
     const url = safeUrl(request);
+    if (method === "GET" && url.pathname === "/healthz") {
+      rejectUnexpectedParameters(url, []);
+      json(response, 200, { ok: true });
+      return;
+    }
     let credential: Credential | undefined;
     let requiredScope: string | undefined;
     try {
@@ -562,10 +567,14 @@ function configuredCredentials(environment: NodeJS.ProcessEnv): Credential[] {
 
 export function startConfiguredOrchestrationServer() {
   const host = process.env.ORCHESTRATION_API_HOST?.trim() || "127.0.0.1";
-  if (host !== "127.0.0.1" && host !== "::1" && host !== "localhost") {
+  const containerBindAllowed =
+    process.env.ORCHESTRATION_API_ALLOW_CONTAINER_BIND === "true";
+  const allowedHost = host === "127.0.0.1" || host === "::1" || host === "localhost" ||
+    (host === "0.0.0.0" && containerBindAllowed);
+  if (!allowedHost) {
     throw new EditorialOrchestrationError(
       "EDITORIAL_ORCHESTRATION_API_BIND_FORBIDDEN",
-      "The internal API is restricted to localhost in this stage.",
+      "The internal API is restricted to localhost unless container binding is explicitly enabled.",
     );
   }
   const port = Number(process.env.ORCHESTRATION_API_PORT ?? "4317");

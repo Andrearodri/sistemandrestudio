@@ -1,0 +1,14 @@
+.git
+.env
+.env.*
+node_modules
+dist
+.python-hermes-venv
+output
+audit-repositories
+sistemandrestudio-backups
+*.bundle
+*.dump
+*.raw
+docs/N8N-TELEGRAM-DRY-RUN-DEPLOYMENT.md
+docs/WEBSITE-POST-PUBLICATION-CORRECTIONS.md

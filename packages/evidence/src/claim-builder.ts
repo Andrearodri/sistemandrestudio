@@ -20,17 +20,11 @@ export function buildDeterministicClaims(
   const combined = `${input.title}. ${input.summary ?? ""}`.trim();
   const normalized = combined.toLowerCase();
   const id = `${input.newsId}-official-page-claim`;
-  const explicitVersionSource =
-    input.summary !== undefined &&
-      /\b(introduc(?:e|es|ed|ing)|release[sd]?|launch(?:ed|es)?|version)\b/i
-        .test(input.summary)
-      ? input.summary
-      : combined;
-  const version = normalizeVersion(explicitVersionSource);
+  const versionContext = findReleasedVersion(combined);
 
   if (
     /\b(preview|beta|early access)\b/.test(normalized) &&
-    /\b(available|availability|introduc|announc|launch)\w*\b/.test(normalized)
+    /\b(available|availability|introduc|announc|launch|offer|provid)\w*\b/.test(normalized)
   ) {
     const subject = inferSubject(combined);
     return subject === undefined
@@ -47,19 +41,14 @@ export function buildDeterministicClaims(
         };
   }
 
-  if (
-    version !== undefined &&
-    /\b(introduc(?:e|es|ed|ing)|release[sd]?|launch(?:ed|es)?|version)\b/.test(
-      normalized,
-    )
-  ) {
-    const subject = inferVersionSubject(explicitVersionSource, version);
+  if (versionContext !== undefined) {
+    const subject = inferVersionSubject(combined, versionContext.version);
     return subject === undefined
       ? noClaim("CLAIM_ENTITY_MISSING")
       : {
           claims: [{
             id,
-            text: `${subject} version ${version} was officially released.`,
+          text: `${subject} version ${versionContext.version} was officially released.`,
             type: "VERSION_RELEASE",
             importance: "PRIMARY",
             expectedSubject: subject,
@@ -90,9 +79,7 @@ export function buildDeterministicClaims(
 
   if (
     /\b(api|endpoint|sdk|cli)\b/.test(normalized) &&
-    /\b(chang(?:e|ed)|add(?:ed)?|remove[sd]?|deprecat\w*|support)\b/.test(
-      normalized,
-    )
+    /\b(chang(?:e|ed)|add(?:ed)?|remove[sd]?|deprecat\w*|support|introduc\w*|launch\w*|announc\w*|offer\w*|provid\w*)\b/.test(normalized)
   ) {
     const subject = inferSubject(combined);
     return subject === undefined
@@ -120,6 +107,20 @@ function noClaim(code: EvidenceDiagnosticCode): DeterministicClaimResult {
   return { claims: [], codes: [code] };
 }
 
+function findReleasedVersion(value: string): { version: string } | undefined {
+  const tokens = /\b(?:version\s*|v)?(\d+(?:\.\d+){1,2})\b/gi;
+  let match: RegExpExecArray | null;
+  while ((match = tokens.exec(value)) !== null) {
+    const numeric = match[1]!;
+    const context = value.slice(Math.max(0, match.index - 42), Math.min(value.length, match.index + match[0].length + 42));
+    if (!/\b(?:introduc\w*|release\w*|launch\w*|announc\w*)\b/i.test(context)) continue;
+    if (/\b(?:isolates|runtime|engine)\b/i.test(context) && /^v/i.test(match[0])) continue;
+    const version = normalizeVersion(`version ${numeric}`);
+    if (version !== undefined) return { version };
+  }
+  return undefined;
+}
+
 function inferVersionSubject(value: string, normalizedVersion: string): string | undefined {
   const escaped = normalizedVersion.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const match = value.match(
@@ -129,15 +130,17 @@ function inferVersionSubject(value: string, normalizedVersion: string): string |
 }
 
 function inferSubject(value: string): string | undefined {
-  const explicit = value.match(
-    /\b(?:meet|introducing|introduces?|launched?|announc(?:e|es|ed|ing))\s+([A-Z][A-Za-z0-9._+-]*(?:\s+[A-Z][A-Za-z0-9._+-]*){0,2})/i,
-  )?.[1];
-  if (explicit !== undefined) return cleanSubject(explicit);
-  const technical = value.match(
-    /\b([A-Z][A-Za-z0-9]*\.(?:js|ai)|[A-Z][A-Za-z0-9]+(?:[-_][A-Za-z0-9]+)+)\b/,
-  )?.[1];
+  const explicit = value.match(/\b(?:meet|introducing|introduces?|launched?|announc(?:e|es|ed|ing))\s+([A-Z][A-Za-z0-9._+-]*)/i)?.[1];
+  if (explicit !== undefined && !GENERIC_SUBJECTS.has(explicit.toLowerCase())) return cleanSubject(explicit);
+  const product = value.match(/\b([A-Z][a-z]+(?:\s+[A-Z][A-Za-z0-9]+){1,5})\s+(?:now\s+)?(?:offers|provides|introduces|supports)\b/)?.[1];
+  if (product !== undefined) return cleanSubject(product);
+  const namedPhrase = value.match(/\b(Agent Skills|WebMCP|Kitesurf|MCP)\b/)?.[1];
+  if (namedPhrase !== undefined) return cleanSubject(namedPhrase);
+  const technical = value.match(/\b([A-Z][a-z]+[A-Z][A-Za-z0-9]*|[A-Z]{2,}[A-Za-z0-9]*|[A-Z][A-Za-z0-9]+(?:[-_][A-Za-z0-9]+)+)\b/)?.[1];
   return cleanSubject(technical);
 }
+
+const GENERIC_SUBJECTS = new Set(["the", "a", "an", "any", "this"]);
 
 function cleanSubject(value: string | undefined): string | undefined {
   const cleaned = value?.replace(/[,:;.!?]+$/g, "").trim();

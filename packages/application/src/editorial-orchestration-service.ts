@@ -164,10 +164,13 @@ export interface EditorialOrchestrationEvent {
 
 export interface HumanDecisionMessage {
   readonly sourceName: string;
+  readonly officialLink?: string;
+  readonly revisionLabel?: "Versão revisada";
   readonly title: string;
   readonly verificationStatus: "CONFIRMED" | "PARTIALLY_CONFIRMED";
   readonly confidence: number;
   readonly summary: string;
+  readonly body?: string;
   readonly allowedClaims: readonly string[];
   readonly limitations: readonly string[];
   readonly draftId: string;
@@ -592,7 +595,12 @@ export class EditorialOrchestrationService {
 
   async registerExternalDecision(input: ExternalDecisionInput): Promise<
     | { readonly kind: "DETAILS"; readonly request: HumanDecisionRequest }
-    | { readonly kind: "DECISION"; readonly decision: PersistedHumanDecision; readonly replayed: boolean }
+    | {
+      readonly kind: "DECISION";
+      readonly request: HumanDecisionRequest;
+      readonly decision: PersistedHumanDecision;
+      readonly replayed: boolean;
+    }
   > {
     const parsed = this.channel.parseDecision(input);
     const request = await this.repository.getDecisionRequest(parsed.requestId);
@@ -603,6 +611,10 @@ export class EditorialOrchestrationService {
       );
     }
     if (parsed.kind === "DETAILS") return { kind: "DETAILS", request };
+    const changeInstructions = parsed.changeInstructions ??
+      (parsed.decision === "REQUEST_CHANGES"
+        ? ["Revisão editorial solicitada via Telegram; forneça instruções antes de uma nova versão."]
+        : undefined);
     const saved = await this.registerHumanDecision({
       requestId: parsed.requestId,
       reviewerId: parsed.reviewerId,
@@ -610,14 +622,14 @@ export class EditorialOrchestrationService {
       receivedAt: parsed.receivedAt,
       idempotencyKey: `external:${parsed.externalMessageReference ?? parsed.requestId}:${parsed.decision}`,
       ...(parsed.reason === undefined ? {} : { reason: parsed.reason }),
-      ...(parsed.changeInstructions === undefined
+      ...(changeInstructions === undefined
         ? {}
-        : { changeInstructions: parsed.changeInstructions }),
+        : { changeInstructions }),
       ...(parsed.externalMessageReference === undefined
         ? {}
         : { externalMessageReference: parsed.externalMessageReference }),
     });
-    return { kind: "DECISION", ...saved };
+    return { kind: "DECISION", request, ...saved };
   }
 
   async retryFailedStep(input: {
@@ -1466,7 +1478,7 @@ export class TelegramHumanDecisionChannel implements HumanDecisionChannel {
             { text: "REJEITAR", callback_data: callback("reject") },
           ],
           [
-            { text: "PEDIR ALTERAÇÃO", callback_data: callback("changes") },
+            { text: "PEDIR REVISÃO", callback_data: callback("changes") },
             { text: "VER DETALHES", callback_data: callback("details") },
           ],
         ],
@@ -1812,10 +1824,13 @@ export function formatHumanDecisionMessage(message: HumanDecisionMessage): strin
   const claims = message.allowedClaims.slice(0, 5).map((item) => `- ${item}`).join("\n");
   const limitations = message.limitations.slice(0, 5).map((item) => `- ${item}`).join("\n");
   return [
-    "Nova notícia pronta para revisão",
+    message.revisionLabel ?? "Nova notícia pronta para revisão",
     "",
     "Fonte:",
     cleanText(message.sourceName, 120),
+    ...(message.officialLink === undefined
+      ? []
+      : ["", "Link oficial:", cleanHttpsUrl(message.officialLink)]),
     "",
     "Título:",
     cleanText(message.title, 240),
@@ -1828,6 +1843,9 @@ export function formatHumanDecisionMessage(message: HumanDecisionMessage): strin
     "",
     "Resumo:",
     cleanText(message.summary, 800),
+    ...(message.body === undefined
+      ? []
+      : ["", "Corpo:", cleanText(message.body, 2_400)]),
     "",
     "Fatos permitidos:",
     claims || "- Nenhum claim resumido.",
@@ -1917,11 +1935,30 @@ function validateDecisionMessage(message: HumanDecisionMessage) {
     );
   }
   cleanText(message.sourceName, 120);
+  if (message.officialLink !== undefined) cleanHttpsUrl(message.officialLink);
   cleanText(message.title, 240);
   cleanText(message.summary, 800);
+  if (message.body !== undefined) cleanText(message.body, 2_400);
   message.allowedClaims.forEach((item) => cleanText(item, 500));
   message.limitations.forEach((item) => cleanText(item, 500));
   return message;
+}
+
+function cleanHttpsUrl(value: string) {
+  const cleaned = value.trim();
+  try {
+    const parsed = new URL(cleaned);
+    if (parsed.protocol !== "https:" || parsed.username || parsed.password ||
+      parsed.hash || cleaned.length > 2_000) {
+      throw new Error("unsafe URL");
+    }
+    return cleaned;
+  } catch {
+    throw new EditorialOrchestrationError(
+      "EDITORIAL_ORCHESTRATION_UNSAFE_URL",
+      "Decision message URL must be a bounded HTTPS URL without credentials or fragments.",
+    );
+  }
 }
 
 function callbackDecision(action: string): HumanEditorialDecision {
