@@ -1,8 +1,20 @@
 {
   "name": "sistemandrestudio",
   "version": "0.1.0",
+  "description": "Backend modular de automação editorial com IA aplicada, verificação factual e revisão humana.",
   "private": true,
   "type": "module",
+  "author": "André Aparecido Rodrigues",
+  "keywords": [
+    "typescript",
+    "nodejs",
+    "postgresql",
+    "automation",
+    "applied-ai",
+    "editorial-workflow",
+    "human-in-the-loop",
+    "n8n"
+  ],
   "workspaces": [
     "apps/*",
     "packages/*"

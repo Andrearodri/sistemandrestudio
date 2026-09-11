@@ -15,8 +15,6 @@ __pycache__/
 .env
 .env.*
 !.env.example
-!.env.local.example
-!.env.test.example
 *.pem
 *.key
 
@@ -31,6 +29,18 @@ _scratch/
 # Artefatos locais de auditoria
 /audit-repositories/
 /docs/GITHUB-PROFESSIONAL-AUDIT-*.md
+
+# Instruções, planos e relatórios operacionais locais
+/AGENTS.md
+/PLAN.md
+/STATUS.md
+/docs/MVP-PLAN.md
+/docs/AWS-TO-LOCAL-MIGRATION.md
+/docs/WEBSITE-LOCAL-INSPECTION.md
+/docs/WEBSITE-LOCAL-INTEGRATION.md
+/docs/N8N-TELEGRAM-DRY-RUN-DEPLOYMENT.md
+/docs/WEBSITE-POST-PUBLICATION-CORRECTIONS.md
+/compose.automacao-wattszap.local.yaml
 
 # Editores e sistema operacional
 .DS_Store

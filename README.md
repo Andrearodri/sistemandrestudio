@@ -1,342 +1,274 @@
-# sistemandrestudio
+# AndréStudio Editorial Engine
 
-Infraestrutura: [plano de migração AWS → Docker local](docs/AWS-TO-LOCAL-MIGRATION.md), com sequência de execução e critérios de validação.
+Backend modular para automação editorial com verificação factual, geração
+controlada de rascunhos, revisão humana e trilha de auditoria.
 
-O núcleo local inclui revisão editorial humana auditável antes de qualquer publicação. Consulte `docs/HUMAN-EDITORIAL-REVIEW.md`; o MVP ainda não está concluído.
+O projeto explora um problema comum em operações de conteúdo: reduzir o trabalho
+manual de acompanhar fontes oficiais e preparar publicações sem delegar à IA a
+decisão sobre o que é verdadeiro ou o ato de publicar. O resultado é um fluxo
+local, testável e orientado a estados, com segurança e idempotência como
+requisitos de domínio.
 
-Pacotes locais supervisionados podem ser preparados após aprovação explícita; consulte `docs/PUBLICATION-PACKAGES.md`. Nenhuma integração publica conteúdo remotamente.
+> **Escopo honesto:** este repositório não contém frontend, dashboard ou SaaS.
+> Também não publica conteúdo automaticamente. As demonstrações principais são
+> offline e usam fixtures; integrações externas são opcionais e permanecem
+> bloqueadas por configuração.
 
-O MVP inclui um radar de fontes oficiais em modo somente leitura: feed público → normalização → deduplicação → relevância → persistência → relatório local. Veja [as fontes oficiais](docs/OFFICIAL-SOURCES.md) e a [operação do radar](docs/RADAR-OPERATIONS.md). A orquestração local opcional por n8n e a decisão humana por Console ou Telegram são descritas abaixo; não há publicação automática, LLM ou acesso implícito a contas.
+## O que o projeto demonstra
 
-A verificação factual determinística registra claims, evidências e resultados
-explicáveis antes de qualquer geração. Somente `CONFIRMED` avança para
-`VERIFIED`; confirmação parcial aguarda revisão, e os demais resultados
-bloqueiam. Veja
-[`docs/FACTUAL-VERIFICATION.md`](docs/FACTUAL-VERIFICATION.md).
+- arquitetura de monólito modular com npm workspaces;
+- domínio editorial modelado como máquina de estados;
+- coleta e normalização de feeds RSS/Atom permitidos;
+- deduplicação e política de relevância determinística e versionada;
+- aquisição segura de evidências em páginas oficiais;
+- verificação factual explicável antes da geração de texto;
+- rascunhos vinculados a claims, evidências e citações;
+- revisão humana com aprovação, rejeição e pedido de alterações;
+- preservação de versões, eventos de auditoria e idempotência;
+- adapters para PostgreSQL e canais externos sem acoplar o domínio;
+- pacotes locais e planos `DRY_RUN` para publicação supervisionada.
 
-A estabilização pode ser verificada com `npm run radar:fixtures` e, com o
-PostgreSQL local ativo, `npm run radar:validate`. O segundo comando usa somente
-o banco terminado em `_test`, limita os itens e comprova duas rodadas
-idempotentes. Isso não significa que o MVP esteja concluído.
+## Fluxo editorial
 
-Sistema operacional com IA para apoiar a operação solo da AndreStudio.dev. O
-projeto pretende reunir automações, inteligência artificial, aprovação humana e
-memória operacional em uma base controlável e auditável.
+```mermaid
+flowchart LR
+    A[Fontes oficiais<br/>RSS ou Atom] --> B[Normalização<br/>e deduplicação]
+    B --> C[Relevância<br/>determinística]
+    C --> D[Aquisição segura<br/>de evidências]
+    D --> E{Verificação factual}
+    E -->|confirmado| F[Rascunho controlado]
+    E -->|insuficiente ou rejeitado| X[Fluxo bloqueado]
+    F --> G{Revisão humana}
+    G -->|pedir alterações| F
+    G -->|rejeitar| X
+    G -->|aprovar| H[Pacote local validado]
+    H --> I[READY_FOR_PUBLICATION]
 
-O problema inicial é reduzir o trabalho manual de acompanhar notícias, validar
-informações e preparar conteúdo, sem perder controle editorial. A primeira
-trilha é:
-
-> notícia → coleta → deduplicação → relevância → verificação → geração → aprovação no Telegram → banco
-
-O objetivo desta fase não é criar uma equipe inteira de agentes. É validar um
-único fluxo de ponta a ponta, com controle humano antes de qualquer uso do
-conteúdo.
-
-> [!IMPORTANT]
-> O projeto está em fase inicial. O núcleo local da máquina de estados está
-> implementado, o adaptador PostgreSQL está disponível e o serviço de aplicação
-> coordena os casos de uso. A relevância agora usa uma política determinística
-> versionada. A API interna da orquestração fica restrita ao host local,
-> autenticada e desativada até ser iniciada explicitamente. Não há publicação
-> automática.
-
-## Estado atual
-
-O núcleo TypeScript e a primeira persistência local foram implementados:
-
-- o workspace usa npm workspaces e TypeScript estrito;
-- a máquina editorial possui 29 testes unitários, fixtures e demonstração local;
-- a política `andre-studio-relevance-v1` possui 25 testes unitários, seis
-  critérios, penalidades explícitas e oito fixtures;
-- o PostgreSQL possui migrations SQL, constraints, transações, idempotência
-  persistente, concorrência otimista e testes de integração;
-- `EditorialWorkflowService` valida envelopes, coordena transições e persiste
-  resultados sem conhecer PostgreSQL;
-- o serviço possui 15 testes unitários e 10 testes de integração próprios;
-- o fluxo de relevância possui mais 10 testes PostgreSQL pelo serviço;
-- as demonstrações em memória e persistente são comandos separados;
-- Git `2.50.1`, Node.js `24.14.0` e npm `11.9.0` estão disponíveis;
-- Docker `29.5.3` e Docker Compose `v5.1.4` estão disponíveis;
-- o ambiente é macOS `26.5.2` em arquitetura ARM64.
-
-Somente o container PostgreSQL oficial local é necessário nesta etapa. Nenhuma
-conta externa foi acessada e nenhum deploy foi realizado. n8n, Telegram, LLM,
-RSS, Hermes e publicação continuam fora do código.
-
-## Escopo do MVP
-
-O MVP deve:
-
-1. coletar uma notícia de uma fonte RSS ou API permitida;
-2. normalizar e deduplicar o item;
-3. classificar relevância com regras versionadas;
-4. aplicar critérios objetivos de verificação e guardar as evidências;
-5. gerar um rascunho somente quando o item estiver apto;
-6. enviar o rascunho ao Telegram para aprovar, editar ou rejeitar;
-7. manter versões após edição e exigir nova aprovação;
-8. registrar dados, transições de estado e decisão humana no PostgreSQL;
-9. marcar conteúdo aprovado como `READY_FOR_PUBLICATION`, sem publicá-lo.
-
-Não fazem parte do MVP:
-
-- publicação automática em redes sociais;
-- Postiz ou integrações oficiais de publicação;
-- Hermes Agent como supervisor;
-- Lead Flow Studio/CRM;
-- infraestrutura AWS EC2;
-- múltiplos agentes autônomos;
-- scraping genérico de sites;
-- execução de ações externas sem aprovação humana.
-
-## Arquitetura proposta
-
-```text
-RSS/API permitida
-       │
-       ▼
-n8n (agenda e orquestração previsível)
-       │
-       ▼
-EditorialWorkflowService
-       │
-       ▼
-Domínio Node.js/TypeScript
-  ├─ normalização e deduplicação
-  ├─ regras de verificação
-  ├─ geração assistida por LLM
-  └─ gateway do Telegram
-       │
-       ▼
-PostgreSQL local (fonte de verdade e auditoria)
+    J[(PostgreSQL)] --- B
+    J --- E
+    J --- G
+    K[n8n opcional] -. dispara .-> B
+    L[Telegram opcional] -. decisão humana .-> G
 ```
 
-Responsabilidades:
+`READY_FOR_PUBLICATION` significa que o material passou pelos controles locais.
+Não significa autorização para deploy ou publicação em rede social. O código
+preserva essa separação: publicação remota automática não foi implementada.
 
-- **n8n:** agenda, encadeia etapas, aplica tentativas controladas e observa
-  timeouts. Não guarda o estado de negócio definitivo.
-- **Aplicação Node.js/TypeScript:** concentra regras, contratos, idempotência,
-  coordenação e testes. A proposta inicial é um monólito modular, não
-  microserviços. Regras editoriais permanecem no domínio.
-- **PostgreSQL:** guarda notícias, evidências, rascunhos, aprovações, execuções e
-  eventos de auditoria.
-- **Telegram:** interface humana de aprovação. No desenvolvimento local, o bot
-  pode consumir atualizações por long polling; webhook público fica para uma
-  fase hospedada.
-- **LLM:** produz rascunhos a partir de fatos e evidências armazenados. Não decide
-  sozinho se uma notícia é verdadeira e não publica conteúdo.
+## Arquitetura
 
-Detalhes, riscos, custos e etapas estão em
-[`docs/MVP-PLAN.md`](docs/MVP-PLAN.md). A arquitetura completa, o modelo de
-dados e as regras de segurança estão em:
+O sistema é um monólito modular. As regras ficam em pacotes independentes de
+infraestrutura, e os adapters conectam banco, rede e canais externos apenas nas
+bordas.
 
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md);
-- [`docs/DATA-MODEL.md`](docs/DATA-MODEL.md);
-- [`docs/SECURITY.md`](docs/SECURITY.md);
-- [`docs/STATE-MACHINE.md`](docs/STATE-MACHINE.md);
-- [`docs/APPLICATION-SERVICE.md`](docs/APPLICATION-SERVICE.md);
-- [`docs/RELEVANCE-POLICY.md`](docs/RELEVANCE-POLICY.md);
-- [`docs/POSTGRESQL.md`](docs/POSTGRESQL.md).
+```text
+apps/sistemandrestudio-api/   CLIs, demos e API HTTP interna
+packages/content-engine/      máquina de estados e geração editorial
+packages/sources/             feeds, normalização, allow-list e deduplicação
+packages/evidence/            aquisição e extração segura de evidências
+packages/application/         casos de uso e orquestração
+packages/database/            adapters PostgreSQL e migrations
+packages/shared/              contratos e utilitários compartilhados
+automations/n8n/              workflows opcionais e inativos por padrão
+```
 
-## Tecnologias em avaliação
+Decisões principais:
 
-| Tecnologia | Direção atual |
+- **monólito modular antes de microserviços:** reduz complexidade operacional sem
+  misturar domínio e infraestrutura;
+- **regras determinísticas antes da IA:** relevância e verificação não dependem
+  da resposta de um modelo;
+- **PostgreSQL como fonte de verdade:** decisões, versões e evidências possuem
+  histórico persistente nos fluxos que usam o adapter;
+- **humano no loop:** aprovação editorial é uma etapa explícita e auditável;
+- **integrações nas bordas:** n8n agenda e coordena, mas não concentra regras de
+  negócio nem substitui o estado persistido.
+
+Documentação técnica selecionada:
+
+- [arquitetura](docs/ARCHITECTURE.md);
+- [máquina de estados](docs/STATE-MACHINE.md);
+- [modelo de dados](docs/DATA-MODEL.md);
+- [segurança](docs/SECURITY.md);
+- [fontes oficiais](docs/OFFICIAL-SOURCES.md);
+- [verificação factual](docs/FACTUAL-VERIFICATION.md);
+- [orquestração editorial](docs/EDITORIAL-ORCHESTRATION.md);
+- [PostgreSQL](docs/POSTGRESQL.md).
+
+## Stack real
+
+| Tecnologia | Uso no projeto |
 | --- | --- |
-| TypeScript e Node.js | base recomendada da aplicação |
-| PostgreSQL 17 | persistência local implementada |
-| n8n | orquestração previsível e limitada |
-| Telegram Bot | aprovação remota após autorização |
-| Docker Compose | um único serviço PostgreSQL local |
-| APIs de IA | adaptador substituível com limite de gasto |
-| Redis | dispensado até existir necessidade comprovada |
-| Hermes Agent | adiado para a fase 2 |
-| React/Next.js | painel futuro |
-| Ollama | opção futura, após avaliar hardware e manutenção |
-| Postiz | publicação futura e separada |
-| AWS EC2/S3 | hospedagem futura |
-| Lead Flow Studio | integração futura com CRM |
+| Node.js `>=24` | runtime, test runner e servidor HTTP nativo |
+| TypeScript `6.0.3` | domínio, aplicação, adapters e CLIs |
+| PostgreSQL `17-alpine` | persistência, concorrência e auditoria |
+| `pg` `8.22.0` | client PostgreSQL |
+| Zod `4.4.3` | validação de contratos e saídas estruturadas |
+| Cheerio `1.1.2` | extração estática de páginas oficiais |
+| fast-xml-parser `5.10.1` | parsing de RSS/Atom |
+| OpenAI SDK `7.4.0` | adapter opcional de geração editorial |
+| Docker Compose | ambiente local de PostgreSQL e API interna |
+| n8n | workflows opcionais, versionados e inativos |
 
-## Estrutura atual
+## Estado verificável
 
-```text
-sistemandrestudio/
-├── apps/
-│   └── sistemandrestudio-api/
-│       └── src/
-│           ├── demo-application.ts
-│           ├── demo-application-postgres.ts
-│           ├── demo-relevance.ts
-│           ├── demo-relevance-postgres.ts
-│           ├── demo.ts
-│           └── demo-postgres.ts
-├── packages/
-│   ├── application/           # envelope e serviço de coordenação
-│   ├── database/              # adapter, migrations e testes PostgreSQL
-│   ├── shared/src/            # ator, timestamp e idempotência
-│   └── content-engine/src/    # máquina, fixtures e repositório em memória
-├── automations/
-│   └── n8n/                   # somente documentação
-├── tests/editorial-state-machine.test.ts
-├── docs/                      # planejamento e especificações
-├── infrastructure/
-│   └── docker/init/           # bootstrap dos bancos e papel local
-├── compose.yaml
-├── package.json
-├── package-lock.json
-├── tsconfig.base.json
-├── tsconfig.json
-├── tsconfig.build.json
-├── .env.example
-└── README.md
-```
+| Área | O que existe | Limite atual |
+| --- | --- | --- |
+| Domínio editorial | máquina de estados, invariantes, replay e idempotência | validado por testes e demos offline |
+| Fontes | RSS/Atom, allow-list, normalização e deduplicação | execução ao vivo depende de rede e fontes permitidas |
+| Evidências | validação de HTTPS, DNS/IP, redirects, tipo e tamanho | demo padrão usa respostas simuladas |
+| Verificação | claims, associação de evidência e resultados explicáveis | somente confirmação suficiente avança o fluxo |
+| Rascunhos | geração determinística com citações | adapters de LLM não são necessários para a demo |
+| Revisão humana | console e contratos de decisão/versionamento | Telegram real exige configuração externa |
+| PostgreSQL | migrations, repositórios e testes de integração | suíte de integração exige banco local ativo |
+| n8n | contratos e workflows de orquestração | workflows ficam inativos por padrão |
+| Publicação | exportação local em Markdown e JSON, planejamento `DRY_RUN` e reconciliação | não há deploy nem postagem automática |
+| IA externa/local | adapters para Ollama e OpenAI com guardas | chamadas reais não fazem parte da validação pública |
 
-`dashboard`, `agents/hermes` e `LICENSE` continuam
-adiados. Não são necessários para validar o núcleo local.
+Na preparação desta versão, `npm test` concluiu **373 de 373 testes** sem
+PostgreSQL ou credenciais externas. Typecheck e build também passaram.
 
-## Princípios iniciais
+## Segurança por design
 
-- aprovação humana é obrigatória;
-- PostgreSQL é a fonte de verdade;
-- cada evento precisa de `correlation_id` e histórico auditável;
-- todo processamento deve ser idempotente;
-- credenciais ficam fora do Git e nunca aparecem em logs;
-- conteúdo externo é dado não confiável, inclusive para o LLM;
-- integrações começam com adaptadores simples e substituíveis;
-- publicação é uma capacidade posterior e separada da aprovação.
+- arquivos `.env*` reais, chaves privadas, logs e dados locais ficam fora do
+  versionamento;
+- o cliente de evidências aceita somente HTTPS e hosts oficiais permitidos;
+- resolução DNS, IPs privados, redirects, content type, tempo e tamanho de
+  resposta são validados antes do processamento;
+- HTML externo é tratado como dado não confiável e não executa JavaScript;
+- a API de orquestração usa bind local por padrão, autenticação bearer com
+  comparação segura, escopos, rate limit e limites de payload/tempo;
+- `DRY_RUN_ORCHESTRATION=true` e `PUBLICATION_ENABLED=false` são os guard rails
+  esperados para fluxos supervisionados;
+- `VERIFIED` autoriza apenas a próxima etapa editorial — nunca uma publicação;
+- ações de Telegram, LLM, n8n e rede não são executadas pela demo offline.
 
-## Execução local
+## Executar localmente
 
-Scripts disponíveis:
+Pré-requisitos:
+
+- Node.js 24 ou superior;
+- npm 11 ou compatível com o lockfile.
+
+Instalação e validação principal:
 
 ```bash
+npm ci
 npm run typecheck
-npm run test
-npm run test:application
-npm run test:relevance
+npm test
 npm run build
-npm run test:watch
-npm run demo
+```
 
-docker compose up -d
+Esses comandos não precisam de credenciais. A suíte principal também não exige
+PostgreSQL.
+
+## Demo offline
+
+A demonstração mais completa percorre um cenário fictício e controlado, sem
+rede, banco ou serviços externos:
+
+```bash
+npm run demo:editorial-orchestration
+```
+
+Outras demos úteis:
+
+```bash
+npm run demo:relevance
+npm run demo:verification
+npm run demo:evidence
+npm run demo:draft
+npm run demo:review
+npm run demo:publication
+npm run demo:publication-reconciliation
+```
+
+Elas permitem observar as decisões do domínio em etapas menores. Os dados são
+fixtures e simulações explícitas; nenhuma saída representa uma publicação real.
+
+## PostgreSQL opcional
+
+Para exercitar persistência e testes de integração, prepare os arquivos locais
+somente se ainda não existirem, preencha apenas credenciais locais e inicie o
+serviço:
+
+```bash
+test -f .env.local || cp .env.example .env.local
+test -f .env.test || cp .env.example .env.test
+docker compose up -d postgres
 npm run db:migrate
 npm run test:integration
 npm run test:application:integration
-npm run demo:postgres
-npm run demo:application
-npm run demo:application:postgres
-npm run demo:relevance
-npm run demo:relevance:postgres
-npm run demo:verification
-npm run demo:verification:postgres
-npm run verify:official
-docker compose down
 ```
 
-O comando `demo` executa uma notícia totalmente fictícia, imprime as transições,
-o histórico de auditoria e termina em `READY_FOR_PUBLICATION`. `demo:postgres`
-persiste cada etapa, fecha a conexão, abre outra e recupera o mesmo agregado.
-As duas demos `demo:application*` executam o mesmo tipo de fluxo pelo serviço;
-a versão PostgreSQL também confirma replay depois da reconexão. Nenhuma inicia
-servidor HTTP ou integração externa.
+O PostgreSQL é opcional para a primeira demonstração do repositório. Não use
+credenciais reais no arquivo de exemplo nem versione o `.env.local` criado.
 
-Use `.env.local.example` e `.env.test.example` como referência. Os arquivos
-locais reais ficam ignorados. O banco usa por padrão `127.0.0.1:55432`; detalhes
-e solução de problemas estão em [`docs/POSTGRESQL.md`](docs/POSTGRESQL.md).
+## Integrações opcionais
 
-## Próximo marco
+- **Ollama:** existe um adapter restrito ao endpoint local esperado e coberto por
+  testes de contrato. A demo não pressupõe modelo instalado.
+- **OpenAI:** existe um provider com schema de saída, limite de chamadas e gate
+  explícito de orçamento. Nenhuma chave é fornecida ou necessária.
+- **Telegram:** o canal valida chat, usuário e assinatura de callback. Um bot
+  real depende de credenciais privadas e homologação separada.
+- **Hermes:** integração experimental/opcional para operação assistida por agente;
+  não faz parte do caminho principal validado.
+- **n8n:** os workflows são artefatos de integração e permanecem inativos; o
+  domínio continua no código TypeScript.
 
-A Etapa 7 prepara a fronteira de verificação para revisão. Qualquer geração de
-conteúdo continua dependente de nova autorização e deverá aceitar apenas itens
-`VERIFIED`. LLM e integrações externas continuam adiados. O MVP completo não
-está concluído.
+Essas capacidades são apresentadas como adapters implementados, não como uma
+operação externa ativa ou homologada de ponta a ponta.
 
-## Execução futura
+## Testes
 
-Quando as etapas correspondentes forem autorizadas, o ambiente local deverá
-usar:
+| Comando | Cobertura prática |
+| --- | --- |
+| `npm test` | domínio, segurança, contratos, API interna e demos auxiliares |
+| `npm run test:application` | serviços de aplicação em memória |
+| `npm run test:relevance` | política determinística de relevância |
+| `npm run typecheck` | contratos TypeScript sem emissão |
+| `npm run build` | compilação de produção |
+| `npm run test:integration` | repositório PostgreSQL; requer banco local |
+| `npm run test:application:integration` | casos de uso com PostgreSQL; requer banco local |
 
-- npm workspaces e lockfile para a aplicação TypeScript;
-- Docker Compose para serviços locais autorizados, sem instalação global;
-- fixtures para testes sem rede;
-- `.env` local não versionado;
-- adaptadores habilitados individualmente para fonte, LLM e Telegram.
+O workflow de CI público executa somente a trilha offline: instalação pelo
+lockfile, typecheck, build e `npm test`.
 
-O núcleo atual usa o executor e o runner de testes nativos do Node.js 24; não há
-framework web ou aplicação HTTP.
+## Limitações conhecidas
 
-## Aquisição oficial de evidências
+- não existe interface gráfica, autenticação de usuário final ou experiência
+  SaaS;
+- a ligação ao vivo de todos os adapters em um único fluxo não é anunciada como
+  concluída;
+- testes PostgreSQL não rodam sem o serviço local;
+- Ollama, OpenAI, Telegram e n8n não foram tratados como integrações reais na
+  validação pública;
+- publicação remota, deploy e postagem em redes sociais não existem neste
+  repositório;
+- a documentação técnica histórica ainda está sendo consolidada em torno deste
+  README principal.
 
-A Etapa 8 adiciona aquisição somente leitura a partir das URLs oficiais já
-persistidas. Allow-list versionada, DNS/IP, redirects, content type, tamanho e
-tempo são validados; o parser não executa JavaScript e o banco não guarda HTML
-completo. Use `npm run demo:evidence`, `npm run demo:evidence:postgres` e, com
-PostgreSQL local, `npm run evidence:official`. Detalhes em
-[`docs/OFFICIAL-EVIDENCE-ACQUISITION.md`](docs/OFFICIAL-EVIDENCE-ACQUISITION.md).
-Isso ainda não conclui o MVP nem autoriza geração ou publicação.
+## Roadmap
 
-A identidade da aquisição é versionada pelo conteúdo mínimo e pelas políticas:
-página inalterada gera replay; página alterada cria nova avaliação histórica.
-A chave externa permanece auditável, fixtures/legados são excluídos da seleção
-oficial e nenhum timestamp aleatório é usado para mascarar idempotência.
+- executar a suíte PostgreSQL em ambiente efêmero e isolado na CI;
+- adicionar lint e métricas de cobertura sem alterar as regras de domínio;
+- consolidar documentação técnica e diagramas de casos de uso;
+- homologar, separadamente e com credenciais privadas, cada adapter opcional;
+- ampliar testes de contrato para falhas reais de feeds e provedores;
+- documentar um cenário end-to-end persistente reproduzível.
 
-## Diagnóstico de associação
+## Autoria
 
-`npm run evidence:diagnose` analisa em modo somente leitura até cinco itens já
-adquiridos. O relatório mostra claims, entidades, datas, páginas, regras,
-códigos de rejeição, score e perdas do funil sem exibir HTML ou segredos.
-Detalhes em
-[`docs/EVIDENCE-DIAGNOSTICS.md`](docs/EVIDENCE-DIAGNOSTICS.md).
+Projeto autoral conduzido por **André Aparecido Rodrigues**. Ferramentas de IA
+foram usadas como apoio ao desenvolvimento e à documentação; as decisões de
+produto, validações e responsabilidade técnica permanecem com o autor.
 
-A calibração determinística confirmou honestamente LiteRT.js e Ray 2.55 e
-manteve três tutoriais/cases sem claim verificável. Isso não conclui o MVP e
-não autoriza geração, Telegram ou publicação.
+Não foi identificada base de fork ou template de terceiros. As bibliotecas npm
+mantêm suas próprias licenças e avisos no lockfile.
 
-## Planejamento de publicação no website
+## Licença
 
-A Etapa 12.4 adiciona somente planos supervisionados `DRY_RUN` para pacotes
-`WEBSITE_EXPORT` já prontos. Arquivos, hashes e manifesto são revalidados antes
-da persistência; operações remotas ficam bloqueadas e `LIVE` é recusado.
-Consulte [`docs/WEBSITE-PUBLICATION-PLANNING.md`](docs/WEBSITE-PUBLICATION-PLANNING.md).
-
-O perfil v2 usa `https://andrestudio.dev.br` como domínio canônico de
-planejamento. DuckDNS permanece apenas como referência técnica legada. A
-estrutura do site, estratégia, diretórios, rota, build e restart continuaram
-`UNKNOWN` no plano. A Etapa 12.7 verificou o domínio público e HTTPS de forma
-somente leitura; nenhuma alteração externa foi executada.
-
-## Reconciliação de publicação manual
-
-A Etapa 12.7 verifica uma publicação já executada manualmente e, quando todos
-os critérios críticos passam, reconcilia pacote e notícia de
-`READY_FOR_PUBLICATION` para `PUBLISHED`. A origem fica explicitamente
-`MANUAL_SUPERVISED_DEPLOY`; o sistema não executa deploy. Consulte
-[`docs/PUBLICATION-RECONCILIATION.md`](docs/PUBLICATION-RECONCILIATION.md).
-
-O verificador usa HTTPS, allow-list, defesa contra destinos privados, limites
-de tempo/tamanho/redirect e checks determinísticos de artigo, blog, sitemap,
-robots e dados estruturados. Replay não cria linhas ou eventos adicionais.
-
-## Rascunhos editoriais controlados
-
-A Etapa 10 adiciona um pacote editorial determinístico, ligado a claims e
-evidências, para gerar rascunhos locais somente de itens `CONFIRMED` em
-`VERIFIED`. São suportados LinkedIn curto e notícia para site, ambos com
-citações e validação antes de `PENDING_APPROVAL`. Não há LLM, Telegram ou
-publicação. Consulte [`docs/EDITORIAL-DRAFTING.md`](docs/EDITORIAL-DRAFTING.md).
-
-O ciclo oficial atual pode ser validado com `npm run pipeline:official:draft`.
-Ele limita a amostra a dez itens, preserva agregados históricos e comprova
-replay sem publicação, Telegram ou LLM. Um item oficial real chegou a
-`PENDING_APPROVAL`; isso não conclui o MVP.
-
-## Orquestração editorial supervisionada
-
-A Etapa 13.1 adiciona uma camada local para n8n iniciar e retomar runs
-persistidas, com decisão humana obrigatória por Console ou Telegram. PostgreSQL
-continua sendo a fonte de verdade e não existe publicação automática.
-
-Documentação:
-
-- [orquestração editorial](docs/EDITORIAL-ORCHESTRATION.md);
-- [integração n8n](docs/N8N-INTEGRATION.md);
-- [revisão humana no Telegram](docs/TELEGRAM-HUMAN-REVIEW.md).
+Uma licença para redistribuição ainda não foi definida. Antes da publicação, o
+autor deve escolher conscientemente os termos aplicáveis; nenhuma licença foi
+adicionada automaticamente nesta preparação.
